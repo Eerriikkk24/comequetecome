@@ -29,3 +29,6 @@ También se puede desplegar en Netlify o Vercel conectando el repositorio.
 Esta primera versión es una demo funcional con recetas y precios no verificados. El presupuesto no calcula todavía precios reales de Mercadona ni conecta con su catálogo. Los datos se guardan en el almacenamiento local del navegador y no se sincronizan entre dispositivos. Para una versión multiusuario se necesitarán backend, cuentas, sincronización, gestión de perfiles y revisión de seguridad alimentaria.
 
 La alergia al marisco requiere comprobar etiquetas, posibles trazas y contaminación cruzada. Ninguna app puede garantizar por sí sola que un producto comercial sea seguro.
+
+
+Actualización nutricional: muestra estimaciones por persona de energía (kcal), proteínas, hidratos de carbono, grasas y fibra en las tarjetas del menú y del recetario. Son valores orientativos, no datos de laboratorio.
