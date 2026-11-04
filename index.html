@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ff6b4a">
+<meta name="description" content="Tu planificador de menús saludables y lista de la compra para dos.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>ComeQueTeCome</title>
+<style>
+:root{--coral:#ff6b4a;--yellow:#ffd166;--mint:#b8ead5;--blue:#9bd8f5;--purple:#c8b6ff;--ink:#28243a;--muted:#77758a;--paper:#fffaf3;--card:#fff;--line:#eee8df;--green:#2e8b68;--shadow:0 12px 35px #40342a12}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:ui-rounded,"Trebuchet MS",system-ui,-apple-system,sans-serif}
+button,input{font:inherit}button{cursor:pointer}.app{max-width:1120px;margin:auto;padding:18px 18px 100px}
+header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:4px 0 20px}.brand{display:flex;align-items:center;gap:12px}.logo{width:52px;height:52px;border-radius:17px;background:var(--yellow);display:grid;place-items:center;font-size:29px;box-shadow:0 5px 0 #e9b849}.brand h1{font-size:clamp(22px,4vw,31px);margin:0;letter-spacing:-1px}.brand p{margin:2px 0 0;color:var(--muted);font-size:13px}.top-pill{background:#fff;border:1px solid var(--line);padding:9px 13px;border-radius:999px;font-size:13px;font-weight:700}
+.hero{background:linear-gradient(115deg,#ffcf70,#ff9b75);border-radius:28px;padding:24px;display:flex;justify-content:space-between;align-items:center;gap:18px;box-shadow:var(--shadow);overflow:hidden}.hero h2{font-size:clamp(23px,4vw,34px);line-height:1.08;margin:0 0 9px;max-width:580px}.hero p{margin:0;max-width:540px;line-height:1.5}.hero-art{font-size:76px;transform:rotate(-9deg);filter:drop-shadow(0 8px 3px #8b4b2430)}
+nav{display:flex;gap:8px;overflow:auto;padding:18px 0 14px}.tab{border:0;background:#fff;color:var(--muted);border-radius:14px;padding:11px 15px;font-weight:800;white-space:nowrap;box-shadow:0 2px 8px #40342a0a}.tab.active{background:var(--ink);color:#fff}
+.panel{display:none}.panel.active{display:block}.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:12px 0 16px}.section-head h2{font-size:23px;margin:0}.section-head p{margin:5px 0 0;color:var(--muted);font-size:14px}.btn{border:0;border-radius:13px;padding:11px 15px;font-weight:800;background:var(--coral);color:white;box-shadow:0 4px 0 #d64d34}.btn.secondary{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}.btn.small{padding:8px 11px;font-size:13px;box-shadow:none}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:16px}.day{border:1px solid var(--line);background:#fff;border-radius:14px;padding:10px 5px;text-align:center;color:var(--muted);font-weight:700}.day strong{display:block;color:var(--ink);font-size:13px;margin-top:3px}.day.active{background:var(--purple);border-color:var(--purple);color:var(--ink)}
+.meal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.meal-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px;box-shadow:var(--shadow);min-width:0}.meal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}.meal-type{font-size:12px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}.meal-emoji{font-size:25px}.meal-card h3{font-size:17px;margin:4px 0 6px}.meta{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}.meal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:13px;gap:8px}.meal-actions button{font-size:12px}.hidden-meal{opacity:.5;background:#f6f2ed}.hidden-meal .meal-info{display:none}
+.tag{display:inline-flex;padding:5px 8px;border-radius:99px;background:#e8f7ef;color:#287553;font-size:11px;font-weight:800;margin-top:8px}.note{background:#fff4d8;border:1px solid #f5dfa2;border-radius:16px;padding:13px 15px;font-size:13px;line-height:1.45;margin:14px 0}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px}.stat b{font-size:23px;display:block;margin-top:4px}.stat span{font-size:12px;color:var(--muted);font-weight:700}
+.list-layout{display:grid;grid-template-columns:1fr 300px;gap:14px}.shopping,.sidebox,.recipe-card,.settings-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:var(--shadow)}.shopping h3,.sidebox h3{margin:0 0 12px}.grocery-group{margin:15px 0}.grocery-group h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px}.grocery-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f2eee8}.grocery-item:last-child{border:0}.grocery-item input{accent-color:var(--green);width:18px;height:18px}.grocery-item.checked span{text-decoration:line-through;color:#aaa}.qty{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap}
+input[type=number],input[type=text],select{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px;background:#fff;color:var(--ink)}label{font-size:13px;font-weight:800;display:block;margin:12px 0 6px}.setting-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.toggle-list{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.toggle{background:#fffaf3;border:1px solid var(--line);padding:10px;border-radius:12px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.toggle input{accent-color:var(--coral)}
+.recipe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.recipe-card .emoji{font-size:30px}.recipe-card h3{margin:8px 0 5px}.recipe-card p{font-size:13px;color:var(--muted);line-height:1.4}.footer{text-align:center;color:var(--muted);font-size:12px;padding:26px 0 0}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 17px;border-radius:99px;font-size:13px;display:none;z-index:5}
+@media(max-width:720px){.app{padding:12px 13px 90px}.hero{padding:20px}.hero-art{font-size:55px}.days{grid-template-columns:repeat(7,minmax(42px,1fr));overflow:auto}.meal-grid{grid-template-columns:1fr}.list-layout{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.recipe-grid{grid-template-columns:repeat(2,1fr)}.setting-grid{grid-template-columns:1fr}.top-pill{display:none}}
+@media(max-width:390px){.recipe-grid{grid-template-columns:1fr}.hero-art{display:none}.toggle-list{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand"><div class="logo">🥑</div><div><h1>ComeQueTeCome</h1><p>Comer rico, vivir mejor 💛</p></div></div><div class="top-pill">👩‍❤️‍👨 Plan para 2</div></header>
+<section class="hero"><div><h2>¡Esta semana se come de maravilla!</h2><p>Vuestro rincón para organizar comidas saludables, descubrir recetas y llegar a Mercadona con todo pensado.</p></div><div class="hero-art">🥕🍓</div></section>
+<nav>
+<button class="tab active" data-tab="menu">📅 Menú semanal</button><button class="tab" data-tab="compra">🛒 Lista de compra</button><button class="tab" data-tab="recetas">🍳 Recetas</button><button class="tab" data-tab="ajustes">⚙️ Preferencias</button>
+</nav>
+<section class="panel active" id="menu">
+<div class="section-head"><div><h2>Vuestro menú</h2><p>Platos variados para dos personas.</p></div><button class="btn" id="newWeek">✨ Renovar semana</button></div>
+<div class="days" id="days"></div>
+<div class="cards" style="margin-bottom:14px"><div class="stat"><span>👩‍❤️‍👨 COMENSALES</span><b>2</b></div><div class="stat"><span>⏱️ TIEMPO MÁXIMO</span><b>60 min</b></div><div class="stat"><span>🛍️ SUPERMERCADO</span><b>Mercadona</b></div></div>
+<div class="meal-grid" id="mealGrid"></div>
+<div class="note">🧡 <b>Importante:</b> esta planificación excluye el marisco. Si existe alergia, comprobad siempre etiquetas, trazas, caldos y salsas, y evitad la contaminación cruzada. La merluza solo debe servirse si se confirma que se tolera y se manipula de forma segura.</div>
+</section>
+<section class="panel" id="compra">
+<div class="section-head"><div><h2>Lista de la compra</h2><p>Ingredientes agrupados para vuestra visita a Mercadona.</p></div><button class="btn secondary" id="copyList">Copiar lista</button></div>
+<div class="list-layout"><div class="shopping"><h3>🧺 Lo que necesitáis</h3><div id="groceryList"></div></div><aside class="sidebox"><h3>💶 Vuestro presupuesto</h3><label for="budget">Presupuesto semanal (€)</label><input type="number" id="budget" min="0" step="5" value="90"><p style="font-size:12px;color:var(--muted);line-height:1.5">La estimación es orientativa. Los precios reales dependen de la tienda, marca y temporada.</p><div class="note" style="margin-top:10px">🛒 Supermercado elegido: <b>Mercadona</b></div><button class="btn" id="saveBudget" style="width:100%">Guardar presupuesto</button></aside></div>
+</section>
+<section class="panel" id="recetas">
+<div class="section-head"><div><h2>Vuestro recetario</h2><p>Ideas sencillas, sabrosas y de menos de una hora.</p></div></div><div class="recipe-grid" id="recipeGrid"></div>
+</section>
+<section class="panel" id="ajustes">
+<div class="section-head"><div><h2>Vuestras preferencias</h2><p>La app se adapta a lo que os gusta.</p></div></div>
+<div class="settings-card">
+<div class="setting-grid">
+<div><h3>👩‍❤️‍👨 Para quién cocinamos</h3><label>Personas</label><input type="text" value="2 personas" disabled><label>Supermercado habitual</label><input type="text" value="Mercadona" disabled><label>Presupuesto semanal (€)</label><input type="number" id="budgetSetting" min="0" step="5" value="90"></div>
+<div><h3>🍽️ Comidas que queréis planificar</h3><div class="toggle-list" id="mealToggles"></div><label>Tiempo máximo por receta</label><select id="maxTime"><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60" selected>1 hora</option></select></div>
+</div>
+<div class="note">🚫 Alergia al marisco: se excluye de las recetas. No se puede garantizar la ausencia de trazas en productos comerciales; comprobad siempre el etiquetado y las advertencias del fabricante.</div>
+<button class="btn" id="saveSettings">Guardar preferencias</button>
+</div>
+</section>
+<div class="footer">Hecho con 🧡 para comer rico y organizarse mejor · ComeQueTeCome</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const mealTypes=[
+ {id:"desayuno",name:"Desayuno",emoji:"☀️"},{id:"media",name:"Media mañana",emoji:"🍎"},{id:"comida",name:"Comida",emoji:"🍽️"},{id:"merienda",name:"Merienda",emoji:"🥛"},{id:"cena",name:"Cena",emoji:"🌙"}
+];
+const recipes=[
+{id:"tostada",name:"Tostada de tomate y aguacate",emoji:"🥑",time:10,type:"desayuno",ingredients:[["Pan integral","4 rebanadas","Panadería"],["Tomate","2 unidades","Fruta y verdura"],["Aguacate","1 unidad","Fruta y verdura"],["Aceite de oliva","10 ml","Despensa"]]},
+{id:"yogur",name:"Bol de yogur, avena y fruta",emoji:"🥣",time:5,type:"desayuno",ingredients:[["Yogur natural","2 unidades","Lácteos y huevos"],["Copos de avena","60 g","Despensa"],["Plátano","2 unidades","Fruta y verdura"],["Nueces","20 g","Despensa"]]},
+{id:"tortilla",name:"Tortilla francesa con espinacas",emoji:"🍳",time:15,type:"desayuno",ingredients:[["Huevos","4 unidades","Lácteos y huevos"],["Espinacas","80 g","Fruta y verdura"],["Pan integral","2 rebanadas","Panadería"]]},
+{id:"fruta",name:"Fruta fresca y almendras",emoji:"🍊",time:5,type:"media",ingredients:[["Fruta de temporada","2 piezas","Fruta y verdura"],["Almendras","25 g","Despensa"]]},
+{id:"queso",name:"Queso fresco con tomate",emoji:"🧀",time:5,type:"media",ingredients:[["Queso fresco","150 g","Lácteos y huevos"],["Tomate cherry","150 g","Fruta y verdura"]]},
+{id:"hummus",name:"Crudités con guacamole",emoji:"🥒",time:10,type:"media",ingredients:[["Zanahoria","2 unidades","Fruta y verdura"],["Pepino","1 unidad","Fruta y verdura"],["Aguacate","1 unidad","Fruta y verdura"],["Limón","1 unidad","Fruta y verdura"]]},
+{id:"pollo",name:"Pollo al horno con patata y verduras",emoji:"🍗",time:45,type:"comida",ingredients:[["Pechuga de pollo","300 g","Carnicería"],["Patata","400 g","Fruta y verdura"],["Calabacín","1 unidad","Fruta y verdura"],["Pimiento","1 unidad","Fruta y verdura"],["Aceite de oliva","15 ml","Despensa"]]},
+{id:"lentejas",name:"Lentejas caseras con verduras",emoji:"🍲",time:50,type:"comida",ingredients:[["Lentejas","160 g","Despensa"],["Zanahoria","2 unidades","Fruta y verdura"],["Cebolla","1 unidad","Fruta y verdura"],["Pimiento","1 unidad","Fruta y verdura"],["Patata","1 unidad","Fruta y verdura"]]},
+{id:"merluza",name:"Merluza al horno con limón",emoji:"🐟",time:25,type:"comida",ingredients:[["Filetes de merluza","300 g","Pescadería"],["Patata","300 g","Fruta y verdura"],["Limón","1 unidad","Fruta y verdura"],["Judías verdes","200 g","Fruta y verdura"]]},
+{id:"arroz",name:"Arroz salteado con pollo y verduras",emoji:"🍚",time:30,type:"comida",ingredients:[["Arroz","140 g","Despensa"],["Pechuga de pollo","250 g","Carnicería"],["Zanahoria","1 unidad","Fruta y verdura"],["Calabacín","1 unidad","Fruta y verdura"],["Pimiento","1 unidad","Fruta y verdura"]]},
+{id:"pasta",name:"Pasta integral con tomate y pavo",emoji:"🍝",time:25,type:"comida",ingredients:[["Pasta integral","160 g","Despensa"],["Tomate triturado","200 g","Conservas"],["Pavo","200 g","Carnicería"],["Cebolla","1 unidad","Fruta y verdura"]]},
+{id:"ensalada",name:"Ensalada templada de quinoa",emoji:"🥗",time:25,type:"comida",ingredients:[["Quinoa","120 g","Despensa"],["Huevo","2 unidades","Lácteos y huevos"],["Tomate","2 unidades","Fruta y verdura"],["Pepino","1 unidad","Fruta y verdura"],["Queso fresco","100 g","Lácteos y huevos"]]},
+{id:"yogurfruta",name:"Yogur con fruta",emoji:"🍓",time:3,type:"merienda",ingredients:[["Yogur natural","2 unidades","Lácteos y huevos"],["Fresas","150 g","Fruta y verdura"]]},
+{id:"tostadaqueso",name:"Tostada de queso fresco",emoji:"🍞",time:5,type:"merienda",ingredients:[["Pan integral","2 rebanadas","Panadería"],["Queso fresco","100 g","Lácteos y huevos"]]},
+{id:"batido",name:"Batido de plátano y leche",emoji:"🥛",time:5,type:"merienda",ingredients:[["Leche","300 ml","Lácteos y huevos"],["Plátano","1 unidad","Fruta y verdura"]]},
+{id:"crema",name:"Crema de calabacín y huevo",emoji:"🥣",time:30,type:"cena",ingredients:[["Calabacín","2 unidades","Fruta y verdura"],["Patata","1 unidad","Fruta y verdura"],["Puerro","1 unidad","Fruta y verdura"],["Huevos","2 unidades","Lácteos y huevos"]]},
+{id:"fajitas",name:"Fajitas de pollo y verduras",emoji:"🌮",time:25,type:"cena",ingredients:[["Tortillas de trigo","4 unidades","Panadería"],["Pechuga de pollo","250 g","Carnicería"],["Pimiento","1 unidad","Fruta y verdura"],["Cebolla","1 unidad","Fruta y verdura"]]},
+{id:"pavo",name:"Pavo a la plancha con ensalada",emoji:"🥬",time:20,type:"cena",ingredients:[["Filetes de pavo","300 g","Carnicería"],["Lechuga","1 unidad","Fruta y verdura"],["Tomate","2 unidades","Fruta y verdura"],["Pepino","1 unidad","Fruta y verdura"]]},
+{id:"revuelto",name:"Revuelto de champiñones",emoji:"🍄",time:15,type:"cena",ingredients:[["Huevos","4 unidades","Lácteos y huevos"],["Champiñones","200 g","Fruta y verdura"],["Cebolla","1 unidad","Fruta y verdura"]]},
+{id:"patata",name:"Patata asada con pollo y ensalada",emoji:"🥔",time:40,type:"cena",ingredients:[["Patata","400 g","Fruta y verdura"],["Pechuga de pollo","200 g","Carnicería"],["Lechuga","1 unidad","Fruta y verdura"],["Tomate","1 unidad","Fruta y verdura"]]}
+];
+const dayNames=["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
+const defaults={
+ lunes:["tostada","fruta","pollo","yogurfruta","crema"],
+ martes:["yogur","queso","lentejas","tostadaqueso","fajitas"],
+ miercoles:["tortilla","fruta","merluza","batido","pavo"],
+ jueves:["tostada","queso","arroz","yogurfruta","revuelto"],
+ viernes:["yogur","hummus","pasta","fruta","patata"],
+ sabado:["tortilla","fruta","ensalada","tostadaqueso","fajitas"],
+ domingo:["yogur","queso","pollo","batido","crema"]
+};
+let state=JSON.parse(localStorage.getItem("cqt_state")||"null")||{activeMeals:mealTypes.map(x=>x.id),budget:90,maxTime:60,menu:defaults,checked:[]};
+let selectedDay=0;
+function save(){localStorage.setItem("cqt_state",JSON.stringify(state))}
+function toast(s){let t=document.getElementById("toast");t.textContent=s;t.style.display="block";setTimeout(()=>t.style.display="none",2100)}
+function renderDays(){document.getElementById("days").innerHTML=dayNames.map((d,i)=>`<button class="day ${i===selectedDay?"active":""}" data-day="${i}">${d.slice(0,2).toUpperCase()}<strong>${d}</strong></button>`).join("");document.querySelectorAll(".day").forEach(b=>b.onclick=()=>{selectedDay=+b.dataset.day;renderDays();renderMeals()})}
+function currentKeys(){return Object.keys(state.menu)}
+function renderMeals(){let key=currentKeys()[selectedDay],ids=state.menu[key];document.getElementById("mealGrid").innerHTML=mealTypes.filter(m=>state.activeMeals.includes(m.id)).map(m=>{let id=ids[mealTypes.findIndex(x=>x.id===m.id)],r=recipes.find(x=>x.id===id);return `<article class="meal-card"><div class="meal-top"><span class="meal-type">${m.name}</span><span class="meal-emoji">${r.emoji}</span></div><div class="meal-info"><h3>${r.name}</h3><div class="meta"><span>⏱ ${r.time} min</span><span>👩‍❤️‍👨 2 raciones</span></div><span class="tag">Saludable y casero</span></div><div class="meal-actions"><button class="btn secondary small" onclick="showRecipe('${r.id}')">Ver receta</button><button class="btn small" onclick="swapRecipe('${key}',${mealTypes.findIndex(x=>x.id===m.id)})">Cambiar ↻</button></div></article>`}).join("")||"<p>Activa alguna comida en Preferencias para verla aquí.</p>"}
+function swapRecipe(day,idx){let type=mealTypes[idx].id,options=recipes.filter(r=>r.type===type&&r.time<=state.maxTime);let current=state.menu[day][idx];let next=options[(options.findIndex(r=>r.id===current)+1)%options.length];state.menu[day][idx]=next.id;save();renderMeals();renderGroceries();toast("¡Plato cambiado!")}
+function showRecipe(id){let r=recipes.find(x=>x.id===id);alert(`${r.emoji} ${r.name}\nTiempo: ${r.time} minutos\n\nIngredientes para 2:\n${r.ingredients.map(i=>"• "+i[0]+": "+i[1]).join("\n")}\n\nPreparación orientativa: prepara y cocina los ingredientes hasta que estén bien hechos. Ajusta el aliño al gusto y comprueba siempre el etiquetado de los productos.`)}
+function renderGroceries(){let totals={};Object.entries(state.menu).forEach(([day,ids])=>ids.forEach((id,idx)=>{if(!state.activeMeals.includes(mealTypes[idx].id))return;let r=recipes.find(x=>x.id===id);r.ingredients.forEach(([name,qty,cat])=>{let key=name; if(!totals[key])totals[key]={qty:[],cat};totals[key].qty.push(qty)})}));let groups={};Object.entries(totals).forEach(([name,v])=>(groups[v.cat]??=[]).push([name,v.qty]));document.getElementById("groceryList").innerHTML=Object.keys(groups).sort().map(cat=>`<div class="grocery-group"><h4>${cat}</h4>${groups[cat].map(([n,q])=>`<label class="grocery-item ${state.checked.includes(n)?"checked":""}"><input type="checkbox" ${state.checked.includes(n)?"checked":""} onchange="checkItem('${n.replace(/'/g,"\\'")}',this.checked)"><span>${n}</span><small class="qty">${q.join(" + ")}</small></label>`).join("")}</div>`).join("")||"<p>No hay ingredientes. Activa comidas en Preferencias.</p>"}
+function checkItem(n,v){state.checked=v?[...new Set([...state.checked,n])]:state.checked.filter(x=>x!==n);save();renderGroceries()}
+function renderRecipes(){document.getElementById("recipeGrid").innerHTML=recipes.filter(r=>r.time<=state.maxTime).map(r=>`<article class="recipe-card"><div class="emoji">${r.emoji}</div><h3>${r.name}</h3><p>⏱ ${r.time} min · Para 2 personas</p><button class="btn secondary small" onclick="showRecipe('${r.id}')">Ver ingredientes</button></article>`).join("")}
+function renderToggles(){document.getElementById("mealToggles").innerHTML=mealTypes.map(m=>`<label class="toggle"><input type="checkbox" value="${m.id}" ${state.activeMeals.includes(m.id)?"checked":""}> ${m.emoji} ${m.name}</label>`).join("")}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===b.dataset.tab));if(b.dataset.tab==="compra")renderGroceries()});
+document.getElementById("newWeek").onclick=()=>{let pools=mealTypes.map(m=>recipes.filter(r=>r.type===m.id&&r.time<=state.maxTime));Object.keys(state.menu).forEach(d=>state.menu[d]=pools.map(p=>p[Math.floor(Math.random()*p.length)].id));state.checked=[];save();renderMeals();renderGroceries();toast("¡Nueva semana preparada!")};
+document.getElementById("saveBudget").onclick=()=>{state.budget=+document.getElementById("budget").value||0;document.getElementById("budgetSetting").value=state.budget;save();toast("Presupuesto guardado")};
+document.getElementById("saveSettings").onclick=()=>{state.activeMeals=[...document.querySelectorAll("#mealToggles input:checked")].map(x=>x.value);state.maxTime=+document.getElementById("maxTime").value;state.budget=+document.getElementById("budgetSetting").value||0;document.getElementById("budget").value=state.budget;save();renderMeals();renderGroceries();renderRecipes();toast("Preferencias guardadas")};
+document.getElementById("budget").value=state.budget;document.getElementById("budgetSetting").value=state.budget;document.getElementById("maxTime").value=state.maxTime;
+document.getElementById("copyList").onclick=()=>{let txt="Compra Mercadona · ComeQueTeCome\n"+[...document.querySelectorAll(".grocery-group")].map(g=>g.querySelector("h4").textContent+"\n"+[...g.querySelectorAll(".grocery-item")].map(x=>"- "+x.querySelector("span").textContent+" "+x.querySelector(".qty").textContent).join("\n")).join("\n\n");navigator.clipboard?.writeText(txt).then(()=>toast("Lista copiada")).catch(()=>toast("No se pudo copiar; selecciona la lista"))};
+renderDays();renderToggles();renderMeals();renderGroceries();renderRecipes();
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+</script>
+</body></html>
