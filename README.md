@@ -7,7 +7,7 @@ Primera versión de una PWA (aplicación web instalable) para organizar menús y
 - Menú de siete días y cinco comidas configurables.
 - Recetas de ejemplo con ingredientes para dos personas.
 - Lista de compra agrupada por secciones y casillas para marcar.
-- Presupuesto editable y supermercado Mercadona como referencia.
+- Presupuesto editable.
 - Preferencias guardadas localmente en el dispositivo.
 - Caché básica para volver a abrir la app sin conexión tras la primera visita.
 
@@ -26,7 +26,7 @@ Después abre `http://localhost:8000`.
 También se puede desplegar en Netlify o Vercel conectando el repositorio.
 
 ## Importante: alcance del prototipo
-Esta primera versión es una demo funcional con recetas y precios no verificados. El presupuesto no calcula todavía precios reales de Mercadona ni conecta con su catálogo. Los datos se guardan en el almacenamiento local del navegador y no se sincronizan entre dispositivos. Para una versión multiusuario se necesitarán backend, cuentas, sincronización, gestión de perfiles y revisión de seguridad alimentaria.
+Esta primera versión es una demo funcional con recetas y precios no verificados. El presupuesto no calcula todavía precios reales de supermercados ni conecta con catálogos de supermercados. Los datos se guardan en el almacenamiento local del navegador y no se sincronizan entre dispositivos. Para una versión multiusuario se necesitarán backend, cuentas, sincronización, gestión de perfiles y revisión de seguridad alimentaria.
 
 La alergia al marisco requiere comprobar etiquetas, posibles trazas y contaminación cruzada. Ninguna app puede garantizar por sí sola que un producto comercial sea seguro.
 
@@ -50,8 +50,8 @@ Actualización nutricional: muestra estimaciones por persona de energía (kcal),
 
 
 ## Lista de compra y precios (v6)
-La lista suma ingredientes de toda la semana, calcula cantidades, estima envases completos y coste por producto, total y comparación con presupuesto. **Los precios precargados son ejemplos orientativos, no precios actuales de Mercadona ni verificados para el CP 20120.** No hay consulta en vivo ni API externa. Los productos por peso/unidad son aproximados; revisar precios reales, alérgenos y trazas en tienda.
+La lista suma ingredientes de toda la semana, calcula cantidades, estima envases completos y coste por producto, total y comparación con presupuesto. **Los precios precargados son ejemplos orientativos, no precios actuales verificados de ningún supermercado.** No hay consulta en vivo ni API externa. Los productos por peso/unidad son aproximados; revisar precios reales, alérgenos y trazas en tienda.
 
 
 ## Presupuesto automático (v7)
-Al generar la semana o guardar presupuesto, se busca una combinación de recetas de menor coste semanal estimado, considerando envases enteros y cantidades ajustadas al objetivo calórico conjunto. Es una heurística, no garantiza el óptimo ni cumplir un presupuesto imposible. Los precios son referencias ilustrativas, NO precios actuales de Mercadona. Comprueba la compra real y las alergias.
+Al generar la semana o guardar presupuesto, se busca una combinación de recetas de menor coste semanal estimado, considerando envases enteros y cantidades ajustadas al objetivo calórico conjunto. Es una heurística, no garantiza el óptimo ni cumplir un presupuesto imposible. Los precios son referencias ilustrativas, NO precios actuales verificados. Comprueba la compra real y las alergias.
