@@ -27,7 +27,7 @@ input[type=number],input[type=text],select{width:100%;border:1px solid var(--lin
 @media(max-width:720px){.app{padding:12px 13px 90px}.hero{padding:20px}.hero-art{font-size:55px}.days{grid-template-columns:repeat(7,minmax(42px,1fr));overflow:auto}.meal-grid{grid-template-columns:1fr}.list-layout{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.recipe-grid{grid-template-columns:repeat(2,1fr)}.setting-grid{grid-template-columns:1fr}.top-pill{display:none}}
 @media(max-width:390px){.recipe-grid{grid-template-columns:1fr}.hero-art{display:none}.toggle-list{grid-template-columns:1fr}}
 .pantry-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}.pantry-item{margin:0;padding:9px;border:1px solid var(--line);border-radius:12px;background:#fffaf3;font-size:12px}.pantry-item input{width:95px;min-width:0;padding:7px}.pantry-item span{margin-top:5px}.meal-actions{flex-wrap:wrap}
-</style>
+.weekly-swap-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(170px,1fr);align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.weekly-swap-row small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.weekly-swap-row select{margin:0}@media(max-width:520px){.weekly-swap-row{grid-template-columns:1fr;gap:5px}}\n</style>
 </head>
 <body>
 <div class="app">
@@ -46,6 +46,12 @@ input[type=number],input[type=text],select{width:100%;border:1px solid var(--lin
 </section>
 <section class="panel" id="compra">
 <div class="section-head"><div><h2>Lista de la compra</h2><p>Ingredientes semanales consolidados, con cantidades totales y coste orientativo.</p></div><button class="btn secondary" id="copyList">Copiar lista</button></div>
+<div class="settings-card" style="margin-bottom:14px">
+<h3>🥕 Ingredientes de esta semana</h3>
+<p class="nutrition-note">Si un ingrediente no os gusta, sustitúyelo para toda la semana. Cambiará en las recetas donde aparezca y se recalcularán las cantidades, las calorías estimadas y la compra. Los cambios se guardan en este dispositivo.</p>
+<div id="weeklyIngredientEditor"></div>
+<p class="nutrition-note">Las sustituciones mantienen la cantidad numérica original: no siempre equivalen en peso, precio, sabor o nutrición. Revisad la receta y los alérgenos antes de cocinar.</p>
+</div>
 <div class="settings-card" style="margin-bottom:14px"><h3>🏠 Despensa en casa</h3><p class="nutrition-note">Introduce lo que ya tienes para descontarlo de la compra. Las cantidades se guardan en este dispositivo y no se descuentan definitivamente hasta que las actualices.</p><div id="pantryEditor"></div></div><div class="list-layout"><div class="shopping"><h3>🧺 Lo que necesitáis</h3><div id="groceryList"></div><div id="reuseTips" class="note"></div></div><aside class="sidebox"><h3>💶 Vuestro presupuesto</h3><div id="priceSummary" style="padding:10px 0"></div><label for="budget">Presupuesto semanal (€)</label><input type="number" id="budget" min="0" step="5" value="90"><p style="font-size:12px;color:var(--muted);line-height:1.5">El menú combina también recetas económicas (preferiblemente sin repetir recetas más de dos veces) y compara la cesta con precios orientativos. Si el presupuesto es demasiado bajo, te avisará; no garantiza el límite ni usa precios actualizados de ningún supermercado. Comprueba la cesta real antes de comprar.</p><button class="btn" id="saveBudget" style="width:100%">Guardar y ajustar menú</button><p id="budgetPlanStatus" style="font-size:12px;line-height:1.5;color:var(--muted)"></p></aside></div>
 </section>
 <section class="panel" id="recetas">
@@ -187,6 +193,7 @@ if(typeof state.dailyKcalGoal!=="number") state.dailyKcalGoal=0;
 if(!state.onlyLunchDinnerV5){state.activeMeals=["comida","cena"];state.onlyLunchDinnerV5=true;localStorage.setItem("cqt_state",JSON.stringify(state));}
 // Cambios individuales de ingredientes, guardados por día y comida.
 if(!state.ingredientSwaps||typeof state.ingredientSwaps!=="object")state.ingredientSwaps={};
+if(!state.weeklyIngredientSwaps||typeof state.weeklyIngredientSwaps!=="object")state.weeklyIngredientSwaps={};
 if(!state.pantry||typeof state.pantry!=="object")state.pantry={};
 if(!Array.isArray(state.weekHistory))state.weekHistory=[];
 // Alternativas con el mismo tipo de cantidad. No se ofrecen mariscos ni otras legumbres.
@@ -225,7 +232,11 @@ function dailyBase(day){return ['comida','cena'].reduce((n,type)=>{let idx=mealT
 function swapKey(day,type){return day+'|'+type;}
 function effectiveIngredients(r,day,type){
  const changes=state.ingredientSwaps[swapKey(day,type)]||{};
- return r.ingredients.map(([name,qty,cat],idx)=>[changes[idx]||name,qty,cat]);
+ return r.ingredients.map(([name,qty,cat],idx)=>{
+  const local=changes[idx];
+  const chosen=local||state.weeklyIngredientSwaps[name]||name;
+  return [chosen,qty,referencePrices[chosen]&&referencePrices[chosen][2]=== 'ud' ? cat : cat];
+ });
 }
 function editIngredient(day,type){
  const idx=mealTypes.findIndex(m=>m.id===type),r=recipes.find(x=>x.id===state.menu[day][idx]);if(!r)return;
@@ -371,8 +382,42 @@ function groceryQuantityLabel(x){
  if(x.price===null)return `Cantidades: ${x.quantities.join(' + ')} (sin total unificado)`;
  return `Total semanal: ${displayTotalQuantity(x.n,x.packUnit)} · En casa: ${displayTotalQuantity(x.inPantry,x.packUnit)} · Comprar: ${displayTotalQuantity(x.toBuy,x.packUnit)}`;
 }
+function weeklyOriginalIngredients(){
+ const found=new Set();
+ Object.entries(state.menu).forEach(([day,ids])=>ids.forEach((id,idx)=>{
+  const type=mealTypes[idx]?.id;
+  if(!state.activeMeals.includes(type))return;
+  const r=recipes.find(x=>x.id===id);
+  if(r)r.ingredients.forEach(([name])=>found.add(name));
+ }));
+ return [...found].sort((a,b)=>a.localeCompare(b,'es'));
+}
+function renderWeeklyIngredientEditor(){
+ const target=document.getElementById('weeklyIngredientEditor');if(!target)return;
+ const names=weeklyOriginalIngredients();
+ const replaceable=names.filter(n=>(ingredientAlternatives[n]||[]).length);
+ const nonreplaceable=names.filter(n=>!ingredientAlternatives[n]?.length);
+ target.innerHTML=replaceable.map((name,i)=>{
+  const current=state.weeklyIngredientSwaps[name]||name;
+  return `<div class="weekly-swap-row"><div><b>${name}</b>${current!==name?`<small> → ${current}</small>`:''}</div><select aria-label="Sustituto semanal para ${name}" data-weekly-swap="${i}"><option value="">Mantener ${name}</option>${ingredientAlternatives[name].map((alternative,j)=>`<option value="${j}" ${current===alternative?'selected':''}>Cambiar por ${alternative}</option>`).join('')}</select></div>`;
+ }).join('')+(nonreplaceable.length?`<details style="margin-top:12px"><summary>Otros ingredientes sin sustituto definido (${nonreplaceable.length})</summary><p class="nutrition-note">${nonreplaceable.join(', ')}. Puedes cambiar alguno desde el plato individual.</p></details>`:'')+
+ `<button class="btn secondary small" id="resetWeeklySwaps" style="margin-top:12px">Restablecer ingredientes de la semana</button>`;
+ target.querySelectorAll('[data-weekly-swap]').forEach(el=>{
+  el.onchange=()=>{
+   const name=replaceable[Number(el.dataset.weeklySwap)];
+   if(el.value==='')delete state.weeklyIngredientSwaps[name];
+   else state.weeklyIngredientSwaps[name]=ingredientAlternatives[name][Number(el.value)];
+   state.checked=[];save();renderMeals();renderGroceries();
+   toast('Ingredientes, calorías y lista semanal actualizados');
+  };
+ });
+ target.querySelector('#resetWeeklySwaps').onclick=()=>{
+  state.weeklyIngredientSwaps={};state.checked=[];save();renderMeals();renderGroceries();
+  toast('Ingredientes semanales restablecidos');
+ };
+}
 function renderGroceries(){
- renderPantry();const entries=pricedGroceries(),groups={};entries.forEach(x=>(groups[x.cat]??=[]).push(x));
+ renderWeeklyIngredientEditor();renderPantry();const entries=pricedGroceries(),groups={};entries.forEach(x=>(groups[x.cat]??=[]).push(x));
  const priced=entries.filter(x=>x.price!==null),unknown=entries.filter(x=>x.price===null);
  const total=priced.reduce((sum,x)=>sum+x.price,0),used=priced.reduce((sum,x)=>sum+x.usedPrice,0);
  const budget=Number(state.budget)||0;
