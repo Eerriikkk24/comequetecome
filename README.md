@@ -55,3 +55,7 @@ La lista suma ingredientes de toda la semana, calcula cantidades, estima envases
 
 ## Presupuesto automático (v7)
 Al generar la semana o guardar presupuesto, se busca una combinación de recetas de menor coste semanal estimado, considerando envases enteros y cantidades ajustadas al objetivo calórico conjunto. Es una heurística, no garantiza el óptimo ni cumplir un presupuesto imposible. Los precios son referencias ilustrativas, NO precios actuales verificados. Comprueba la compra real y las alergias.
+
+
+## Siete mejoras (version noviembre 2026)
+Nutricion estimada por ingrediente, despensa local, cambios de plato por similitud de coste y energia, historial de tres semanas, compra por envases descontando despensa, reutilizacion heuristica de ingredientes y pasos orientativos. Precios y composicion nutricional NO verificados en supermercados ni por marca. La informacion nutricional puede ser incompleta si faltan equivalencias.

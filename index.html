@@ -26,6 +26,7 @@ input[type=number],input[type=text],select{width:100%;border:1px solid var(--lin
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 17px;border-radius:99px;font-size:13px;display:none;z-index:5}
 @media(max-width:720px){.app{padding:12px 13px 90px}.hero{padding:20px}.hero-art{font-size:55px}.days{grid-template-columns:repeat(7,minmax(42px,1fr));overflow:auto}.meal-grid{grid-template-columns:1fr}.list-layout{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.recipe-grid{grid-template-columns:repeat(2,1fr)}.setting-grid{grid-template-columns:1fr}.top-pill{display:none}}
 @media(max-width:390px){.recipe-grid{grid-template-columns:1fr}.hero-art{display:none}.toggle-list{grid-template-columns:1fr}}
+.pantry-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}.pantry-item{margin:0;padding:9px;border:1px solid var(--line);border-radius:12px;background:#fffaf3;font-size:12px}.pantry-item input{width:95px;min-width:0;padding:7px}.pantry-item span{margin-top:5px}.meal-actions{flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -40,12 +41,12 @@ input[type=number],input[type=text],select{width:100%;border:1px solid var(--lin
 <div class="days" id="days"></div>
 <div class="cards" style="margin-bottom:14px"><div class="stat"><span>👩‍❤️‍👨 COMENSALES</span><b>2</b></div><div class="stat"><span>⏱️ TIEMPO MÁXIMO</span><b>60 min</b></div></div>
 <div class="calorie-box" id="calorieSummary" aria-live="polite"></div>
-<div class="meal-grid" id="mealGrid"></div><p class="nutrition-note">* En comida y cena, las recetas están pensadas para dos y se reparten en dos mitades iguales. Los valores nutricionales por persona son estimaciones; el resumen diario suma la receta completa para los dos.</p>
+<div class="meal-grid" id="mealGrid"></div><div class="note" id="weekHistoryNote"></div><p class="nutrition-note">* Nutrientes aproximados calculados a partir de una tabla local por ingrediente y de las cantidades de la receta. No son datos de etiquetado ni mediciones exactas. Los ingredientes sin equivalencia se señalan expresamente.</p>
 <div class="note">🧡 <b>Importante:</b> esta planificación excluye el marisco. Si existe alergia, comprobad siempre etiquetas, trazas, caldos y salsas, y evitad la contaminación cruzada. La merluza solo debe servirse si se confirma que se tolera y se manipula de forma segura.</div>
 </section>
 <section class="panel" id="compra">
 <div class="section-head"><div><h2>Lista de la compra</h2><p>Ingredientes semanales consolidados, con envases y coste orientativo.</p></div><button class="btn secondary" id="copyList">Copiar lista</button></div>
-<div class="list-layout"><div class="shopping"><h3>🧺 Lo que necesitáis</h3><div id="groceryList"></div></div><aside class="sidebox"><h3>💶 Vuestro presupuesto</h3><div id="priceSummary" style="padding:10px 0"></div><label for="budget">Presupuesto semanal (€)</label><input type="number" id="budget" min="0" step="5" value="90"><p style="font-size:12px;color:var(--muted);line-height:1.5">El menú combina también recetas económicas (preferiblemente sin repetir recetas más de dos veces) y compara la cesta con precios orientativos. Si el presupuesto es demasiado bajo, te avisará; no garantiza el límite ni usa precios actualizados de ningún supermercado. Comprueba la cesta real antes de comprar.</p><button class="btn" id="saveBudget" style="width:100%">Guardar y ajustar menú</button><p id="budgetPlanStatus" style="font-size:12px;line-height:1.5;color:var(--muted)"></p></aside></div>
+<div class="settings-card" style="margin-bottom:14px"><h3>🏠 Despensa en casa</h3><p class="nutrition-note">Introduce lo que ya tienes para descontarlo de la compra. Las cantidades se guardan en este dispositivo y no se descuentan definitivamente hasta que las actualices.</p><div id="pantryEditor"></div></div><div class="list-layout"><div class="shopping"><h3>🧺 Lo que necesitáis</h3><div id="groceryList"></div><div id="reuseTips" class="note"></div></div><aside class="sidebox"><h3>💶 Vuestro presupuesto</h3><div id="priceSummary" style="padding:10px 0"></div><label for="budget">Presupuesto semanal (€)</label><input type="number" id="budget" min="0" step="5" value="90"><p style="font-size:12px;color:var(--muted);line-height:1.5">El menú combina también recetas económicas (preferiblemente sin repetir recetas más de dos veces) y compara la cesta con precios orientativos. Si el presupuesto es demasiado bajo, te avisará; no garantiza el límite ni usa precios actualizados de ningún supermercado. Comprueba la cesta real antes de comprar.</p><button class="btn" id="saveBudget" style="width:100%">Guardar y ajustar menú</button><p id="budgetPlanStatus" style="font-size:12px;line-height:1.5;color:var(--muted)"></p></aside></div>
 </section>
 <section class="panel" id="recetas">
 <div class="section-head"><div><h2>Vuestro recetario</h2><p>Ideas sencillas, sabrosas y de menos de una hora, con nuevas opciones económicas.</p></div></div><div class="recipe-grid" id="recipeGrid"></div><p class="nutrition-note">* Información nutricional orientativa por persona. No sustituye el etiquetado del producto ni el asesoramiento de un profesional.</p>
@@ -55,7 +56,7 @@ input[type=number],input[type=text],select{width:100%;border:1px solid var(--lin
 <div class="settings-card">
 <div class="setting-grid">
 <div><h3>👩‍❤️‍👨 Para quién cocinamos</h3><label>Personas</label><input type="text" value="2 personas" disabled><label>Presupuesto semanal (€)</label><input type="number" id="budgetSetting" min="0" step="5" value="90"></div>
-<div><h3>🍽️ Comidas que queréis planificar</h3><div class="toggle-list" id="mealToggles"></div><label>Tiempo máximo por receta</label><select id="maxTime"><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60" selected>1 hora</option></select><label for="dailyKcalGoal">Objetivo diario conjunto (kcal para los dos)</label><input type="number" id="dailyKcalGoal" min="0" step="1" inputmode="numeric" placeholder="Ej. 3800"><p class="nutrition-note">Indicad el objetivo conjunto para los dos (por ejemplo, 3000 kcal = 1500 por persona). La app ajusta automáticamente las cantidades de comida y cena para aproximarse al objetivo sin añadir otras comidas. Las cifras son estimaciones, no una recomendación médica.</p></div>
+<div><h3>🍽️ Comidas que queréis planificar</h3><div class="toggle-list" id="mealToggles"></div><label>Tiempo máximo por receta</label><select id="maxTime"><option value="30">30 minutos</option><option value="45">45 minutos</option><option value="60" selected>1 hora</option></select><label for="dailyKcalGoal">Objetivo diario conjunto (kcal para los dos)</label><input type="number" id="dailyKcalGoal" min="0" step="1" inputmode="numeric" placeholder="Ej. 3800"><p class="nutrition-note">Indicad el objetivo conjunto para los dos (por ejemplo, 3000 kcal = 1500 por persona). La app ajusta cantidades usando la estimación nutricional de los ingredientes cuando todos están reconocidos. Si faltan datos no afirmará haber alcanzado el objetivo. Las raciones pueden resultar grandes; no es una recomendación médica.</p></div>
 </div>
 <div class="note">🚫 Alergia al marisco: se excluye de las recetas. No se puede garantizar la ausencia de trazas en productos comerciales; comprobad siempre el etiquetado y las advertencias del fabricante.</div>
 <button class="btn" id="saveSettings">Guardar preferencias</button>
@@ -181,6 +182,8 @@ if(typeof state.dailyKcalGoal!=="number") state.dailyKcalGoal=0;
 if(!state.onlyLunchDinnerV5){state.activeMeals=["comida","cena"];state.onlyLunchDinnerV5=true;localStorage.setItem("cqt_state",JSON.stringify(state));}
 // Cambios individuales de ingredientes, guardados por día y comida.
 if(!state.ingredientSwaps||typeof state.ingredientSwaps!=="object")state.ingredientSwaps={};
+if(!state.pantry||typeof state.pantry!=="object")state.pantry={};
+if(!Array.isArray(state.weekHistory))state.weekHistory=[];
 // Alternativas con el mismo tipo de cantidad. No se ofrecen mariscos ni otras legumbres.
 const ingredientAlternatives={
  "Pechuga de pollo":["Filetes de pavo","Pavo"],"Filetes de pavo":["Pechuga de pollo","Pavo"],"Pavo":["Pechuga de pollo","Filetes de pavo"],"Carne picada de pavo":["Carne picada magra"],"Carne picada magra":["Carne picada de pavo"],
@@ -191,6 +194,29 @@ const ingredientAlternatives={
  "Queso fresco":["Requesón","Ricotta"],"Requesón":["Queso fresco","Ricotta"],"Ricotta":["Queso fresco","Requesón"],"Mozzarella":["Queso fresco"],
  "Plátano":["Manzana","Pera"],"Manzana":["Pera","Plátano"],"Pera":["Manzana","Plátano"],"Fresas":["Fruta de temporada"],"Nueces":["Almendras","Avellanas"],"Almendras":["Nueces","Avellanas"],"Avellanas":["Almendras","Nueces"]
 };
+// Datos orientativos por 100 g o 100 ml; NO son datos oficiales de marcas.
+// Se evita fingir precisión cuando falta equivalencia o cantidad interpretable.
+const nutrient100={
+"Aceite de oliva":[824,0,0,91.6,0],"Aguacate":[160,2,8.5,14.7,6.7],"Albahaca":[23,3.2,2.7,.6,1.6],"Almendras":[579,21.2,21.6,49.9,12.5],"Arroz":[360,7,79,0.7,1.3],"Avellanas":[628,15,17,61,10],"Bacalao fresco":[82,18,0,.7,0],"Berenjena":[25,1,6,.2,3],"Boniato":[86,1.6,20,.1,3],"Brócoli":[34,2.8,6.6,.4,2.6],"Calabacín":[17,1.2,3.1,.3,1],"Canela":[247,4,81,1.2,53],"Carne picada de pavo":[170,20,0,10,0],"Carne picada magra":[176,21,0,10,0],"Cebolla":[40,1.1,9.3,.1,1.7],"Champiñones":[22,3.1,3.3,.3,1],"Copos de avena":[389,17,66,7,10.6],"Crema de cacahuete 100% ":[588,25,20,50,6],"Crema de cacahuete 100%":[588,25,20,50,6],"Cuscús":[376,12.8,77.4,.6,5],"Dorada limpia":[96,19,0,2,0],"Espinacas":[23,2.9,3.6,.4,2.2],"Filetes de merluza":[82,17.8,0,.7,0],"Filetes de pavo":[110,24,0,1.2,0],"Fresas":[32,.7,7.7,.3,2],"Fruta de temporada":[60,.5,15,.2,2],"Huevos":[143,12.6,.7,9.5,0],"Leche":[62,3.2,4.8,3.5,0],"Lechuga":[15,1.4,2.9,.2,1.3],"Lentejas":[353,25,60,1.1,11],"Limón":[29,1.1,9.3,.3,2.8],"Manzana":[52,.3,13.8,.2,2.4],"Maíz":[96,3.4,21,1.5,2.4],"Melocotón":[39,.9,9.5,.3,1.5],"Miel":[304,.3,82,0,.2],"Mozzarella":[280,22,2.2,21,0],"Nueces":[654,15,14,65,6.7],"Pan integral":[247,13,41,4.2,7],"Pasta integral":[348,13,70,2.5,8],"Patata":[77,2,17,.1,2.2],"Pavo":[110,24,0,1.2,0],"Pavo cocido":[115,20,2,3,0],"Pechuga de pollo":[110,23,0,1.5,0],"Pepino":[15,.7,3.6,.1,.5],"Pera":[57,.4,15,.1,3.1],"Pimiento":[31,1,6,.3,2.1],"Pimientos":[31,1,6,.3,2.1],"Plátano":[89,1.1,23,.3,2.6],"Puerro":[61,1.5,14,.3,1.8],"Queso fresco":[174,12,3,13,0],"Queso parmesano":[431,38,4,29,0],"Queso rallado":[350,25,3,26,0],"Quinoa":[368,14,64,6,7],"Requesón":[98,11,3.4,4.3,0],"Ricotta":[174,11,3,13,0],"Salmón fresco":[208,20,0,13,0],"Semillas de chía":[486,17,42,31,34],"Ternera magra":[150,21,0,7,0],"Tomate":[18,.9,3.9,.2,1.2],"Tomate cherry":[18,.9,3.9,.2,1.2],"Tomate triturado":[29,1.4,5.4,.3,1.5],"Tortillas de trigo":[312,8,52,8,3],"Tortitas de arroz":[387,8,81,3,4],"Yogur natural":[63,3.5,4.7,3.5,0],"Zanahoria":[41,.9,10,.2,2.8],"Huevo":[143,12.6,.7,9.5,0]};
+const unitWeights={"Aguacate":160,"Berenjena":300,"Calabacín":250,"Dorada limpia":350,"Huevos":55,"Huevo":55,"Lechuga":250,"Pepino":250,"Pimiento":160,"Pimientos":160,"Tomate":180,"Tomate cherry":15,"Yogur natural":125,"Pan integral":35,"Tortillas de trigo":45,"Tortitas de arroz":9,"Plátano":120,"Fruta de temporada":160,"Manzana":170,"Pera":170,"Melocotón":150,"Limón":100,"Cebolla":160,"Puerro":160,"Patata":200,"Zanahoria":100,"Mozzarella":125};
+function ingredientBase(name,qty){
+ const m=String(qty).trim().match(/^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*(.*)$/);if(!m)return null;
+ const n=m[1].includes('/')?Number(m[1].split('/')[0])/Number(m[1].split('/')[1]):Number(m[1].replace(',','.'));
+ const unit=m[2].trim().toLowerCase();if(/^(g|gr|gramos)\b/.test(unit))return n;
+ if(/^(ml)\b/.test(unit))return n;
+ if(/^(kg)\b/.test(unit))return n*1000;
+ if(/^(l|litros)\b/.test(unit))return n*1000;
+ if(/rebanadas?/.test(unit))return n*(unitWeights[name]||0)||null;
+ if(/^(piezas?|unidades?|unidad|ud)\b/.test(unit))return n*(unitWeights[name]||0)||null;
+ return null;
+}
+function recipeNutrition(r,day=null,type=null,factor=1){
+ const ing=day&&type?effectiveIngredients(r,day,type):r.ingredients;
+ let totals=[0,0,0,0,0],missing=[];
+ for(const [name,qty] of ing){const grams=ingredientBase(name,qty),n=nutrient100[name];if(!n||grams===null){missing.push(name);continue;}n.forEach((v,i)=>totals[i]+=v*grams*factor/100);}
+ return {kcal:totals[0],protein:totals[1],carbs:totals[2],fat:totals[3],fiber:totals[4],missing};
+}
+function dailyBase(day){return ['comida','cena'].reduce((n,type)=>{let idx=mealTypes.findIndex(m=>m.id===type),r=recipes.find(x=>x.id===state.menu[day]?.[idx]);if(!r)return n;const v=recipeNutrition(r,day,type);return n+(v.missing.length?0:v.kcal)},0)}
 function swapKey(day,type){return day+'|'+type;}
 function effectiveIngredients(r,day,type){
  const changes=state.ingredientSwaps[swapKey(day,type)]||{};
@@ -211,7 +237,7 @@ function editIngredient(day,type){
  if(n===0)delete state.ingredientSwaps[key][number];else state.ingredientSwaps[key][number]=alternatives[n-1];
  save();renderMeals();renderGroceries();
  toast('Ingrediente actualizado en receta y compra');
- alert('Cambio guardado. Se mantiene la cantidad original como aproximación; revisa peso, cocción, alérgenos y ración. Las calorías y macros mostrados NO se recalculan por este cambio.');
+ alert('Cambio guardado. La nutrición se recalcula con los valores aproximados del nuevo ingrediente; revisa cantidades, cocción, alérgenos y ración.');
 }
 let selectedDay=0;
 function save(){localStorage.setItem("cqt_state",JSON.stringify(state))}
@@ -221,17 +247,17 @@ function currentKeys(){return Object.keys(state.menu)}
 // Los datos nutricionales del recetario son para la receta completa (2 raciones).
 // El ajuste se aplica a las cantidades, no solo a la cifra mostrada.
 function planFactor(day){
-  let ids=state.menu[day]||[];
-  let base=["comida","cena"].reduce((sum,type)=>{
-    let idx=mealTypes.findIndex(m=>m.id===type),r=recipes.find(x=>x.id===ids[idx]);
-    return sum+(r?.nutrition?.kcal||0);
-  },0);
-  let goal=Number(state.dailyKcalGoal)||0;
-  return goal>0&&base>0?goal/base:1;
+ const goal=Number(state.dailyKcalGoal)||0;
+ const required=['comida','cena'].map(type=>{let idx=mealTypes.findIndex(m=>m.id===type);return recipes.find(x=>x.id===state.menu[day]?.[idx]);});
+ if(!goal||required.some(r=>!r))return 1;
+ const values=required.map((r,i)=>recipeNutrition(r,day,['comida','cena'][i]));
+ if(values.some(n=>n.missing.length))return 1;
+ const base=values.reduce((sum,n)=>sum+n.kcal,0);
+ return base>0?Math.min(6,goal/base):1; // límite explícito para evitar raciones desproporcionadas
 }
-function mealFactor(day,type){return (type==="comida"||type==="cena")?planFactor(day):1;}
-function perServing(r,factor=1){let n=r.nutrition||{};return {kcal:Math.round((n.kcal||0)*factor/2),protein:Math.round((n.protein||0)*factor/2),carbs:Math.round((n.carbs||0)*factor/2),fat:Math.round((n.fat||0)*factor/2),fiber:Math.round((n.fiber||0)*factor/2)}}
-function nutritionHTML(r,factor=1){let n=perServing(r,factor);return `<div class="nutrition"><span>🔥 ${n.kcal} kcal/persona · ${n.kcal*2} kcal los dos</span><span>🥩 ${n.protein} g proteína</span><span>🍞 ${n.carbs} g hidratos</span><span>🥑 ${n.fat} g grasas</span><span>🌿 ${n.fiber} g fibra</span></div>`}
+function mealFactor(day,type){return (type==='comida'||type==='cena')?planFactor(day):1;}
+function perServing(r,factor=1,day=null,type=null){let n=recipeNutrition(r,day,type,factor);return {kcal:Math.round(n.kcal/2),protein:Math.round(n.protein/2),carbs:Math.round(n.carbs/2),fat:Math.round(n.fat/2),fiber:Math.round(n.fiber/2),missing:n.missing};}
+function nutritionHTML(r,factor=1,day=null,type=null){let n=perServing(r,factor,day,type);return `<div class="nutrition"><span>🔥 ${n.kcal} kcal/persona · ${n.kcal*2} kcal los dos</span><span>🥩 ${n.protein} g proteína</span><span>🍞 ${n.carbs} g hidratos</span><span>🥑 ${n.fat} g grasas</span><span>🌿 ${n.fiber} g fibra</span></div>${n.missing.length?`<p class="nutrition-note">⚠️ Estimación incompleta: sin datos de ${n.missing.join(', ')}.</p>`:''}`;}
 function scaledQuantity(q,factor){
   if(Math.abs(factor-1)<0.00001)return q;
   const m=String(q).trim().match(/^(\d+(?:[.,]\d+)?|\d+\/\d+)\s*(.*)$/);
@@ -244,24 +270,38 @@ function scaledQuantity(q,factor){
   return `${Number(n.toFixed(2)).toLocaleString('es-ES')} ${unit}`.trim();
 }
 function renderCalorieSummary(){
-  const key=currentKeys()[selectedDay],ids=state.menu[key]||[],goal=Number(state.dailyKcalGoal)||0;
-  const parts=["comida","cena"].map(type=>{
-    const idx=mealTypes.findIndex(m=>m.id===type),r=recipes.find(x=>x.id===ids[idx]);
-    const per=r?perServing(r,mealFactor(key,type)).kcal:0;
-    return {type,per,both:per*2,name:r?r.name:"Sin receta"};
-  });
-  // Se suman EXACTAMENTE las cifras que se muestran en las tarjetas, no valores internos sin redondear.
-  const total=parts.reduce((sum,p)=>sum+p.both,0);
-  const remaining=goal-total,pct=goal>0?Math.min(100,Math.round(total/goal*100)):0;
-  const fmt=n=>n.toLocaleString("es-ES");
-  const breakdown=parts.map(p=>`<div style="margin:5px 0"><strong>${p.type==="comida"?"Comida":"Cena"}:</strong> ${fmt(p.per)} kcal/persona × 2 = <strong>${fmt(p.both)} kcal</strong></div>`).join("");
-  document.getElementById("calorieSummary").innerHTML=`<h3>🔥 Desglose de comida y cena · ${dayNames[selectedDay]}</h3><div style="font-size:13px;line-height:1.7;margin:9px 0">${breakdown}</div><div class="calorie-numbers"><div><strong>${fmt(total)}</strong> <span>kcal estimadas entre los dos</span></div>${goal>0?`<div><strong>${fmt(goal)}</strong> <span>kcal objetivo conjunto</span></div><div><strong>${fmt(Math.abs(remaining))}</strong> <span>${remaining>0?"kcal estimadas por debajo":remaining<0?"kcal estimadas por encima":"kcal de diferencia (estimación)"}</span></div>`:`<div><span>Configura vuestro objetivo conjunto en Preferencias.</span></div>`}</div>${goal>0?`<div class="calorie-track"><i style="width:${pct}%"></i></div><p class="nutrition-note">${pct}% del objetivo según el recetario. <strong>${remaining===0?"Objetivo teórico alcanzado; no está verificado con los ingredientes.":"La suma coincide con las cifras mostradas arriba."}</strong> Las cantidades se escalan proporcionalmente y se redondean; los valores nutricionales originales son orientativos, no están recalculados ingrediente a ingrediente. Si cambias un ingrediente, las kcal mostradas NO se actualizan por ese cambio. No es una garantía de ingesta real.</p>`:"<p class=\"nutrition-note\">Sin objetivo configurado: se usan las cantidades originales de las recetas.</p>"}`;
+ const day=currentKeys()[selectedDay],goal=Number(state.dailyKcalGoal)||0;
+ const parts=['comida','cena'].map(type=>{const idx=mealTypes.findIndex(m=>m.id===type),r=recipes.find(x=>x.id===state.menu[day]?.[idx]);const n=r?perServing(r,mealFactor(day,type),day,type):{kcal:0,missing:['Sin receta']};return {type,per:n.kcal,both:n.kcal*2,missing:n.missing};});
+ const total=parts.reduce((sum,p)=>sum+p.both,0),missing=parts.flatMap(p=>p.missing),diff=goal-total,pct=goal?Math.min(100,Math.round(total/goal*100)):0;
+ const fmt=n=>n.toLocaleString('es-ES');
+ document.getElementById('calorieSummary').innerHTML=`<h3>🔥 Calorías de comida y cena · ${dayNames[selectedDay]}</h3>${parts.map(p=>`<div style="font-size:13px;margin:6px 0">${p.type==='comida'?'Comida':'Cena'}: ${fmt(p.per)} kcal/persona × 2 = <b>${fmt(p.both)} kcal</b></div>`).join('')}<div class="calorie-numbers"><div><strong>${fmt(total)}</strong> <span>kcal estimadas para los dos</span></div>${goal?`<div><strong>${fmt(goal)}</strong> <span>objetivo conjunto</span></div><div><strong>${fmt(Math.abs(diff))}</strong> <span>${diff>0?'por debajo':diff<0?'por encima':'de diferencia'}</span></div>`:''}</div>${goal?`<div class="calorie-track"><i style="width:${pct}%"></i></div>`:''}<p class="nutrition-note">${missing.length?'⚠️ Estimación INCOMPLETA: '+[...new Set(missing)].join(', ')+'. No se confirma el objetivo.':goal&&Math.abs(diff)<=Math.max(20,goal*.02)?'✓ Objetivo aproximado según ingredientes de referencia (no verificado en etiquetas).':goal?'Objetivo no alcanzado según las estimaciones.':'Configura el objetivo en Preferencias.'} Las raciones están limitadas a ×6 como máximo y pueden ser grandes. Los datos son aproximados.</p>`;
 }
-function renderMeals(){let key=currentKeys()[selectedDay],ids=state.menu[key];document.getElementById("mealGrid").innerHTML=mealTypes.filter(m=>state.activeMeals.includes(m.id)).map(m=>{let idx=mealTypes.findIndex(x=>x.id===m.id),id=ids[idx],r=recipes.find(x=>x.id===id),factor=mealFactor(key,m.id);return `<article class="meal-card"><div class="meal-top"><span class="meal-type">${m.name}</span><span class="meal-emoji">${r.emoji}</span></div><div class="meal-info"><h3>${r.name}</h3><div class="meta"><span>⏱ ${r.time} min (orientativo)</span><span>👩‍❤️‍👨 2 raciones iguales</span></div>${nutritionHTML(r,factor)}${factor!==1?`<p class="nutrition-note">Cantidades ajustadas ×${factor.toFixed(2)}. Calorías orientativas; revisa los ingredientes actualizados.</p>`:""}<span class="tag">Cantidades para dos</span></div><div class="meal-actions"><button class="btn secondary small" onclick="showRecipe('${r.id}','${key}','${m.id}')">Ver receta</button><button class="btn small" onclick="swapRecipe('${key}',${idx})">Cambiar ↻</button><button class="btn secondary small" onclick="editIngredient('${key}','${m.id}')">Cambiar ingrediente 🥕</button></div></article>` }).join("")||"<p>Activa alguna comida en Preferencias para verla aquí.</p>";renderCalorieSummary()}
-function swapRecipe(day,idx){let type=mealTypes[idx].id,options=recipes.filter(r=>r.type===type&&r.time<=state.maxTime);let current=state.menu[day][idx];let next=options[(options.findIndex(r=>r.id===current)+1)%options.length];state.menu[day][idx]=next.id;delete state.ingredientSwaps[swapKey(day,type)];save();renderMeals();renderGroceries();toast("¡Plato cambiado!")}
+function renderMeals(){let key=currentKeys()[selectedDay],ids=state.menu[key];document.getElementById("mealGrid").innerHTML=mealTypes.filter(m=>state.activeMeals.includes(m.id)).map(m=>{let idx=mealTypes.findIndex(x=>x.id===m.id),id=ids[idx],r=recipes.find(x=>x.id===id),factor=mealFactor(key,m.id);return `<article class="meal-card"><div class="meal-top"><span class="meal-type">${m.name}</span><span class="meal-emoji">${r.emoji}</span></div><div class="meal-info"><h3>${r.name}</h3><div class="meta"><span>⏱ ${r.time} min (orientativo)</span><span>👩‍❤️‍👨 2 raciones iguales</span></div>${nutritionHTML(r,factor,key,m.id)}${factor!==1?`<p class="nutrition-note">Cantidades ajustadas ×${factor.toFixed(2)}. Calorías orientativas; revisa los ingredientes actualizados.</p>`:""}<span class="tag">Cantidades para dos</span></div><div class="meal-actions"><button class="btn secondary small" onclick="showRecipe('${r.id}','${key}','${m.id}')">Ver receta</button><button class="btn small" onclick="swapRecipe('${key}',${idx})">Cambiar ↻</button><button class="btn secondary small" onclick="editIngredient('${key}','${m.id}')">Cambiar ingrediente 🥕</button></div></article>` }).join("")||"<p>Activa alguna comida en Preferencias para verla aquí.</p>";renderCalorieSummary()}
+function swapRecipe(day,idx){
+ const type=mealTypes[idx].id,current=state.menu[day][idx],old=recipes.find(r=>r.id===current),pool=recipes.filter(r=>r.type===type&&r.time<=state.maxTime&&r.id!==current);
+ if(!pool.length){toast('No hay otra receta disponible');return;}
+ const originalCost=old?estimatedRecipeCost(old,day,type):0;
+ const recent=new Set(state.weekHistory.flatMap(w=>w.ids||[]));
+ const used=Object.values(state.menu).flat();
+ const candidates=pool.map(r=>({r,score:Math.abs(estimatedRecipeCost(r,day,type)-originalCost)*3+Math.abs(recipeNutrition(r).kcal-recipeNutrition(old).kcal)/120+(used.filter(id=>id===r.id).length*8)+(recent.has(r.id)?6:0)})).sort((a,b)=>a.score-b.score);
+ const next=candidates[0].r;state.menu[day][idx]=next.id;delete state.ingredientSwaps[swapKey(day,type)];save();renderMeals();renderGroceries();toast('Plato cambiado por una alternativa de coste y energía similares (estimados)');
+}
+function estimatedRecipeCost(r,day,type){let total=0;for(const [name,qty] of r.ingredients){let ref=referencePrices[name],n=parseAmount(qty);if(!ref||!n)continue;let amount=n.n;if(n.u!==ref[2]){if(n.u==='ud'&&ref[2]==='g'&&ref[3])amount*=ref[3];else continue;}total+=amount/ref[1]*ref[0];}return total;}
+function recipeSteps(r){
+ const names=r.ingredients.map(x=>x[0]),isPasta=names.some(n=>/Pasta|Cuscús|Quinoa|Arroz|Lentejas/.test(n)),hasMeat=names.some(n=>/pollo|pavo|ternera|carne/i.test(n)),hasFish=names.some(n=>/merluza|salmón|bacalao|dorada/i.test(n)),hasEgg=names.some(n=>/huevos?/i.test(n));
+ const steps=['Lava las verduras y prepara todos los ingredientes. Pesa las cantidades ajustadas de la receta.'];
+ if(isPasta)steps.push('Cuece el cereal, pasta o lentejas siguiendo las indicaciones de su envase; comprueba que quede bien cocido.');
+ if(hasMeat)steps.push('Cocina completamente la carne en sartén u horno, sin dejar partes crudas; comprueba la temperatura segura cuando corresponda.');
+ if(hasFish)steps.push('Cocina el pescado hasta que esté bien hecho y comprueba la ausencia de espinas. Evita contaminación cruzada con mariscos.');
+ if(hasEgg)steps.push('Prepara los huevos al final y cuájalos bien, especialmente para personas vulnerables.');
+ steps.push('Saltea, cuece u hornea las verduras según el plato; mezcla con los ingredientes preparados y ajusta el aliño.');
+ steps.push('Divide en dos raciones iguales. Si el factor de cantidades es elevado, usa recipientes adecuados y amplía el tiempo necesario.');
+ return steps;
+}
 function showRecipe(id,day=null,type=null){
- let r=recipes.find(x=>x.id===id),factor=day&&type?mealFactor(day,type):1,n=perServing(r,factor);
- alert(`${r.emoji} ${r.name}\nTiempo orientativo: ${r.time} minutos\n\nINFORMACIÓN NUTRICIONAL ESTIMADA\n🔥 ${n.kcal} kcal por persona · ${n.kcal*2} kcal para los dos\nProteínas: ${n.protein} g · Hidratos: ${n.carbs} g\nGrasas: ${n.fat} g · Fibra: ${n.fiber} g\n\nIngredientes para 2 personas (cantidades ajustadas):\n${(day&&type?effectiveIngredients(r,day,type):r.ingredients).map(i=>"• "+i[0]+": "+scaledQuantity(i[1],factor)).join("\n")}\n\nPreparación orientativa: prepara y cocina los ingredientes hasta que estén bien hechos. Si las cantidades aumentan, el tiempo de cocción puede aumentar. Comprueba siempre el etiquetado y evita mariscos, caldos o salsas que los contengan y la contaminación cruzada.\n\nLas kcal son estimaciones del recetario escaladas proporcionalmente, no cálculos nutricionales verificados ingrediente a ingrediente. Los redondeos de compra y las marcas pueden alterar el resultado. Los cambios de ingrediente no recalculan las kcal ni los macronutrientes.`);
+ const r=recipes.find(x=>x.id===id);if(!r)return;
+ const factor=day&&type?mealFactor(day,type):1,n=perServing(r,factor,day,type),items=day&&type?effectiveIngredients(r,day,type):r.ingredients;
+ alert(`${r.emoji} ${r.name}\nTiempo orientativo: ${r.time} min (puede aumentar al escalar)\n\nNUTRICIÓN APROXIMADA\n${n.kcal} kcal por persona · ${n.kcal*2} kcal para los dos\nProteínas ${n.protein} g · Hidratos ${n.carbs} g · Grasas ${n.fat} g · Fibra ${n.fiber} g\n${n.missing.length?'ATENCIÓN: faltan datos de '+n.missing.join(', '):''}\n\nINGREDIENTES PARA DOS\n${items.map(i=>'• '+i[0]+': '+scaledQuantity(i[1],factor)).join('\n')}\n\nPASOS ORIENTATIVOS\n${recipeSteps(r).map((t,i)=>(i+1)+'. '+t).join('\n')}\n\nInstrucciones generales generadas según ingredientes, no una receta culinaria comprobada. Revisa siempre alérgenos, caldos, salsas, trazas y contaminación cruzada con marisco.`);
 }
 const referencePrices={"Aceite de oliva":[6.5,1000,"ml"],"Aguacate":[1.35,1,"ud"],"Albahaca":[1.2,20,"g"],"Almendras":[2.65,200,"g"],"Arroz":[1.35,1000,"g"],"Avellanas":[2.6,200,"g"],"Bacalao fresco":[9.5,500,"g"],"Berenjena":[1.5,1,"ud"],"Boniato":[2.4,1000,"g"],"Brócoli":[2.2,500,"g"],"Calabacín":[1.2,1,"ud"],"Canela":[1.2,40,"g"],"Carne picada de pavo":[4.5,400,"g"],"Carne picada magra":[5.0,400,"g"],"Cebolla":[1.8,1000,"g",180],"Champiñones":[1.8,250,"g"],"Copos de avena":[1.5,500,"g"],"Crema de cacahuete 100%":[3.2,350,"g"],"Cuscús":[1.65,500,"g"],"Dorada limpia":[5.5,1,"ud"],"Espinacas":[1.5,300,"g"],"Filetes de merluza":[5.5,500,"g"],"Filetes de pavo":[4.3,400,"g"],"Fresas":[3.5,500,"g"],"Fruta de temporada":[2.4,1000,"g",180],"Huevos":[2.7,12,"ud"],"Leche":[1.05,1000,"ml"],"Lechuga":[1.35,1,"ud"],"Lentejas":[1.7,500,"g"],"Limón":[1.75,1000,"g",110],"Manzana":[2.3,1000,"g",180],"Maíz":[1.25,285,"g"],"Melocotón":[2.9,1000,"g",180],"Miel":[3.5,500,"g"],"Mozzarella":[1.25,125,"g"],"Nueces":[2.5,200,"g"],"Pan integral":[1.8,20,"rebanadas"],"Pasta integral":[1.3,500,"g"],"Patata":[2.7,2000,"g",220],"Pavo":[4.2,400,"g"],"Pavo cocido":[2.3,200,"g"],"Pechuga de pollo":[5.2,500,"g"],"Pepino":[0.95,1,"ud"],"Pera":[2.4,1000,"g",180],"Pimiento":[1.2,1,"ud"],"Pimientos":[1.2,1,"ud"],"Plátano":[1.9,1000,"g",160],"Puerro":[1.7,500,"g",180],"Queso fresco":[1.9,250,"g"],"Queso parmesano":[2.8,150,"g"],"Queso rallado":[2.0,200,"g"],"Quinoa":[2.7,500,"g"],"Requesón":[1.9,200,"g"],"Ricotta":[2.1,250,"g"],"Salmón fresco":[6.9,400,"g"],"Semillas de chía":[2.3,250,"g"],"Ternera magra":[6.2,400,"g"],"Tomate":[2.3,1000,"g",180],"Tomate cherry":[1.8,250,"g"],"Tomate triturado":[1.0,400,"g"],"Tortillas de trigo":[1.8,8,"ud"],"Tortitas de arroz":[1.2,14,"ud"],"Yogur natural":[1.65,8,"ud"],"Zanahoria":[1.5,1000,"g",120],"Huevo":[2.7,12,"ud"]};
 
@@ -304,19 +344,26 @@ function collectGroceries(){
 }
 function pricedGroceries(){
  return collectGroceries().map(x=>{
-  const ref=referencePrices[x.name];
-  if(!ref||x.unmatched)return {...x,price:null};
-  const packs=Math.ceil((x.n-0.000001)/ref[1]);
-  return {...x,price:packs*ref[0],packs,packPrice:ref[0],packSize:ref[1],packUnit:ref[2],usedPrice:x.n/ref[1]*ref[0]};
+  const ref=referencePrices[x.name],inPantry=Math.max(0,Number(state.pantry[x.name])||0);
+  if(!ref||x.unmatched)return {...x,price:null,inPantry};
+  const toBuy=Math.max(0,x.n-inPantry),packs=Math.ceil(Math.max(0,toBuy-0.000001)/ref[1]);
+  return {...x,toBuy,inPantry,price:packs*ref[0],packs,packPrice:ref[0],packSize:ref[1],packUnit:ref[2],usedPrice:toBuy/ref[1]*ref[0]};
  });
 }
+function setPantry(name,value){state.pantry[name]=Math.max(0,Number(value)||0);save();renderGroceries();}
+function renderPantry(){
+ const entries=collectGroceries();document.getElementById('pantryEditor').innerHTML=`<div class="pantry-grid">${entries.filter(x=>referencePrices[x.name]).map(x=>{const ref=referencePrices[x.name];return `<label class="pantry-item">${x.name}<span style="display:flex;align-items:center;gap:6px"><input type="number" min="0" step="1" value="${Number(state.pantry[x.name])||0}" data-pantry="${x.name}" aria-label="Cantidad disponible de ${x.name}"><small>${ref[2]}</small></span></label>`}).join('')}</div><button class="btn secondary small" id="clearPantry" style="margin-top:10px">Vaciar despensa guardada</button>`;
+ document.querySelectorAll('[data-pantry]').forEach(input=>input.onchange=()=>setPantry(input.dataset.pantry,input.value));
+ document.getElementById('clearPantry').onclick=()=>{if(confirm('¿Borrar las cantidades guardadas de la despensa?')){state.pantry={};save();renderGroceries();}};
+}
 function renderGroceries(){
- const entries=pricedGroceries(),groups={};entries.forEach(x=>(groups[x.cat]??=[]).push(x));
+ renderPantry();const entries=pricedGroceries(),groups={};entries.forEach(x=>(groups[x.cat]??=[]).push(x));
  const priced=entries.filter(x=>x.price!==null),unknown=entries.filter(x=>x.price===null);
  const total=priced.reduce((sum,x)=>sum+x.price,0),used=priced.reduce((sum,x)=>sum+x.usedPrice,0);
  const budget=Number(state.budget)||0;
- document.getElementById('groceryList').innerHTML=Object.keys(groups).sort().map(cat=>`<div class="grocery-group"><h4>${cat}</h4>${groups[cat].map(x=>`<label class="grocery-item ${state.checked.includes(x.name)?'checked':''}"><input type="checkbox" ${state.checked.includes(x.name)?'checked':''} onchange="checkItem('${x.name.replace(/'/g,"\\'")}',this.checked)"><span style="flex:1;min-width:0"><b>${x.name}</b><small style="display:block;color:var(--muted);font-size:12px">Necesario: ${x.quantities.join(' + ')}${x.price!==null?` · Comprar: ${x.packs} envase(s) de ${x.packSize} ${x.packUnit}`:''}</small></span><strong style="white-space:nowrap">${x.price===null?'Sin precio':money(x.price)}</strong></label>`).join('')}</div>`).join('')||'<p>No hay ingredientes. Activa comidas en Preferencias.</p>';
- document.getElementById('priceSummary').innerHTML=`<div style="font-size:13px;color:var(--muted)">Estimación de cesta semanal · 2 personas</div><div style="font-size:29px;font-weight:850;margin:6px 0">${money(total)}${unknown.length?' + pendientes':''}</div><div style="font-size:13px;line-height:1.7">${priced.length} ingredientes con referencia · ${unknown.length} sin precio<br>Coste de ingredientes consumidos: ${money(used)}<br>${budget>0?`Presupuesto: ${money(budget)} · ${total>budget?`Exceso estimado: ${money(total-budget)}`:`Margen estimado: ${money(budget-total)}`}`:'Configura un presupuesto semanal'}</div><p style="font-size:12px;line-height:1.45;color:var(--muted)">⚠️ Precios de ejemplo, NO precios actuales comprobados de supermercados. Incluyen envases completos y redondeo al alza. Pueden variar por tienda, peso y marca; el precio final de caja puede ser diferente. No se consulta ninguna API ni se compra nada.</p><p style="font-size:12px;color:var(--muted)">Revisa ingredientes, trazas y contaminación cruzada con marisco en cada producto.</p>`;
+ document.getElementById('groceryList').innerHTML=Object.keys(groups).sort().map(cat=>`<div class="grocery-group"><h4>${cat}</h4>${groups[cat].map(x=>`<label class="grocery-item ${state.checked.includes(x.name)?'checked':''}"><input type="checkbox" ${state.checked.includes(x.name)?'checked':''} onchange="checkItem('${x.name.replace(/'/g,"\\'")}',this.checked)"><span style="flex:1;min-width:0"><b>${x.name}</b><small style="display:block;color:var(--muted);font-size:12px">Necesario: ${x.quantities.join(' + ')}${x.price!==null?` · En casa: ${x.inPantry} ${x.packUnit} · Falta: ${Math.round(x.toBuy*10)/10} ${x.packUnit}`:""}${x.price!==null?` · Comprar: ${x.packs} envase(s) de ${x.packSize} ${x.packUnit}`:''}</small></span><strong style="white-space:nowrap">${x.price===null?'Sin precio':money(x.price)}</strong></label>`).join('')}</div>`).join('')||'<p>No hay ingredientes. Activa comidas en Preferencias.</p>';
+ const shared=entries.filter(x=>x.quantities.length>=3).sort((a,b)=>b.quantities.length-a.quantities.length).slice(0,5);document.getElementById('reuseTips').textContent=shared.length?'♻️ Aprovechamiento: '+shared.map(x=>x.name+' ('+x.quantities.length+' usos)').join(', ')+'. Compra y prepara solo lo necesario, conserva adecuadamente y aprovecha los ingredientes en varios platos; no se presupone que las sobras cocinadas sean seguras para otra comida.':'♻️ El menú aprovecha los ingredientes compartidos cuando es posible.';
+ document.getElementById('priceSummary').innerHTML=`<div style="font-size:13px;color:var(--muted)">Estimación de cesta semanal · 2 personas</div><div style="font-size:29px;font-weight:850;margin:6px 0">${money(total)}${unknown.length?' + pendientes':''}</div><div style="font-size:13px;line-height:1.7">${priced.length} ingredientes con referencia · ${unknown.length} sin precio<br>Coste de cantidades pendientes: ${money(used)}<br>${budget>0?`Presupuesto: ${money(budget)} · ${total>budget?`Exceso estimado: ${money(total-budget)}`:`Margen estimado: ${money(budget-total)}`}`:'Configura un presupuesto semanal'}</div><p style="font-size:12px;line-height:1.45;color:var(--muted)">⚠️ Precios de ejemplo, NO precios actuales comprobados de supermercados. Se descuentan las existencias de la despensa y se compran envases completos con redondeo al alza. Pueden variar por tienda, peso y marca; el precio final de caja puede ser diferente. No se consulta ninguna API ni se compra nada.</p><p style="font-size:12px;color:var(--muted)">Revisa ingredientes, trazas y contaminación cruzada con marisco en cada producto.</p>`;
 }
 
 function checkItem(n,v){state.checked=v?[...new Set([...state.checked,n])]:state.checked.filter(x=>x!==n);save();renderGroceries()}
@@ -335,6 +382,7 @@ function planBudgetWeek(){
  const slots=mealTypes.map((m,idx)=>({type:m.id,idx,pool:recipes.filter(r=>r.type===m.id&&r.time<=state.maxTime)})).filter(x=>state.activeMeals.includes(x.type)&&x.pool.length);
  if(!slots.length){toast('Activa alguna comida en Preferencias');return;}
  const original=JSON.parse(JSON.stringify(state.menu));
+ const recentIds=new Set(state.weekHistory.flatMap(w=>w.ids||[]));
  let best=null;
  const shuffle=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
  const evaluate=()=>{
@@ -347,7 +395,7 @@ function planBudgetWeek(){
   }
   // El tercer uso de una misma receta recibe una penalización muy alta.
   // Se permiten dos usos cuando el presupuesto es ajustado.
-  const penalty=excess*400+repeats*22;
+  const penalty=excess*400+repeats*22+days.reduce((n,day)=>n+slots.reduce((v,slot)=>v+(recentIds.has(state.menu[day][slot.idx])?9:0),0),0);
   const feasible=budget>0&&c.total<=budget&&c.missing===0;
   return {...c,repeats,excess,unique,feasible,score:c.total+penalty+c.missing*10000};
  };
@@ -382,13 +430,15 @@ function planBudgetWeek(){
   if(better(candidate,best))best={menu:JSON.parse(JSON.stringify(state.menu)),...candidate};
  }
  if(!best){state.menu=original;return;}
+ state.weekHistory.unshift({date:new Date().toISOString().slice(0,10),ids:days.flatMap(day=>slots.map(slot=>original[day]?.[slot.idx]).filter(Boolean))});state.weekHistory=state.weekHistory.slice(0,3);
  state.menu=best.menu;state.ingredientSwaps={};state.checked=[];save();renderMeals();renderGroceries();
  const status=document.getElementById('budgetPlanStatus');
  const variety=`Variedad: ${best.unique} recetas distintas; ${best.excess?'algunas aparecen más de dos veces':'ninguna aparece más de dos veces'} por tipo de comida.`;
  const note=best.missing?` ${best.missing} ingredientes sin precio: total incompleto.`:'';
  if(budget>0){
-  status.textContent=best.feasible?`✓ Cesta estimada ${money(best.cost)} / ${money(budget)}. ${variety} Precios orientativos, no verificados en tiendas.`:`Cesta estimada ${money(best.cost)} / ${money(budget)}. ${best.cost>budget?'No se ha podido cumplir el presupuesto manteniendo la variedad.':''} ${variety}${note} Precios orientativos.`;
- }else status.textContent=`Cesta estimada ${money(best.cost)}. ${variety}${note} Indica un presupuesto para comparar.`;
+  status.textContent=best.feasible?`✓ Cesta estimada ${money(best.total)} / ${money(budget)}. ${variety} Precios orientativos, no verificados en tiendas.`:`Cesta estimada ${money(best.total)} / ${money(budget)}. ${best.total>budget?'No se ha podido cumplir el presupuesto manteniendo la variedad.':''} ${variety}${note} Precios orientativos.`;
+ }else status.textContent=`Cesta estimada ${money(best.total)}. ${variety}${note} Indica un presupuesto para comparar.`;
+ document.getElementById('weekHistoryNote').textContent=`📆 Historial: ${state.weekHistory.length} semana(s) anterior(es) guardada(s) en este dispositivo. Se intenta evitar repetir platos recientes.`;
  toast(best.feasible?'Menú variado dentro del presupuesto estimado':'Menú variado: revisa el coste');
 }
 document.getElementById("newWeek").onclick=planBudgetWeek;
@@ -401,7 +451,7 @@ document.getElementById("copyList").onclick=()=>{
  const txt=`ComeQueTeCome · compra semanal (precios ORIENTATIVOS, no verificados en tiendas)\nPresupuesto: ${money(state.budget)} · Cesta estimada: ${money(total)}\n\n`+entries.map(x=>`- ${x.name}: ${x.quantities.join(' + ')} | ${x.price===null?'Precio no disponible':`${x.packs} envases de ${x.packSize} ${x.packUnit} · ${money(x.price)}`}`).join('\n');
  navigator.clipboard?.writeText(txt).then(()=>toast('Lista copiada')).catch(()=>toast('No se pudo copiar la lista'));
 };
-renderDays();renderToggles();renderMeals();renderGroceries();renderRecipes();
+renderDays();renderToggles();renderMeals();renderGroceries();renderRecipes();document.getElementById('weekHistoryNote').textContent=`📆 Historial: ${state.weekHistory.length} semana(s) anterior(es) guardada(s) en este dispositivo.`;
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 </script>
 </body></html>
