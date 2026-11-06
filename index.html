@@ -148,6 +148,40 @@ let state=JSON.parse(localStorage.getItem("cqt_state")||"null")||{activeMeals:me
 if(typeof state.dailyKcalGoal!=="number") state.dailyKcalGoal=0;
 // Migración de esta versión: planificar solo comida y cena como se ha solicitado.
 if(!state.onlyLunchDinnerV5){state.activeMeals=["comida","cena"];state.onlyLunchDinnerV5=true;localStorage.setItem("cqt_state",JSON.stringify(state));}
+// Cambios individuales de ingredientes, guardados por día y comida.
+if(!state.ingredientSwaps||typeof state.ingredientSwaps!=="object")state.ingredientSwaps={};
+// Alternativas con el mismo tipo de cantidad. No se ofrecen mariscos ni otras legumbres.
+const ingredientAlternatives={
+ "Pechuga de pollo":["Filetes de pavo","Pavo"],"Filetes de pavo":["Pechuga de pollo","Pavo"],"Pavo":["Pechuga de pollo","Filetes de pavo"],"Carne picada de pavo":["Carne picada magra"],"Carne picada magra":["Carne picada de pavo"],
+ "Filetes de merluza":["Salmón fresco","Bacalao fresco"],"Salmón fresco":["Filetes de merluza","Bacalao fresco"],"Bacalao fresco":["Filetes de merluza","Salmón fresco"],
+ "Patata":["Boniato"],"Boniato":["Patata"],"Arroz":["Quinoa","Cuscús","Pasta integral"],"Quinoa":["Arroz","Cuscús"],"Cuscús":["Arroz","Quinoa"],"Pasta integral":["Arroz","Cuscús"],
+ "Calabacín":["Berenjena","Pimiento"],"Berenjena":["Calabacín","Pimiento"],"Pimiento":["Calabacín","Berenjena"],"Pimientos":["Pimiento","Calabacín"],"Zanahoria":["Calabacín","Pimiento"],"Pepino":["Calabacín","Pimiento"],"Brócoli":["Espinacas","Champiñones"],"Espinacas":["Brócoli","Champiñones"],"Champiñones":["Espinacas","Brócoli"],
+ "Tomate":["Tomate cherry"],"Tomate cherry":["Tomate"],"Cebolla":["Puerro"],"Puerro":["Cebolla"],
+ "Queso fresco":["Requesón","Ricotta"],"Requesón":["Queso fresco","Ricotta"],"Ricotta":["Queso fresco","Requesón"],"Mozzarella":["Queso fresco"],
+ "Plátano":["Manzana","Pera"],"Manzana":["Pera","Plátano"],"Pera":["Manzana","Plátano"],"Fresas":["Fruta de temporada"],"Nueces":["Almendras","Avellanas"],"Almendras":["Nueces","Avellanas"],"Avellanas":["Almendras","Nueces"]
+};
+function swapKey(day,type){return day+'|'+type;}
+function effectiveIngredients(r,day,type){
+ const changes=state.ingredientSwaps[swapKey(day,type)]||{};
+ return r.ingredients.map(([name,qty,cat],idx)=>[changes[idx]||name,qty,cat]);
+}
+function editIngredient(day,type){
+ const idx=mealTypes.findIndex(m=>m.id===type),r=recipes.find(x=>x.id===state.menu[day][idx]);if(!r)return;
+ const items=effectiveIngredients(r,day,type);
+ const options=items.map(([name],i)=>`${i+1}. ${name}${ingredientAlternatives[r.ingredients[i][0]]?' (cambiable)':''}`).join('\n');
+ const choice=prompt('¿Qué ingrediente quieres cambiar? Escribe su número:\n'+options);if(choice===null)return;
+ const number=Number(choice)-1;if(!Number.isInteger(number)||number<0||number>=items.length){toast('Número no válido');return;}
+ const original=r.ingredients[number][0],alternatives=ingredientAlternatives[original]||[];
+ if(!alternatives.length){alert('Todavía no hay una alternativa comprobada para este ingrediente.');return;}
+ const selected=prompt(`Cambiar ${items[number][0]} por:\n0. Recuperar original (${original})\n`+alternatives.map((x,i)=>`${i+1}. ${x}`).join('\n')+'\nEscribe el número:');
+ if(selected===null)return;const n=Number(selected);
+ if(!Number.isInteger(n)||n<0||n>alternatives.length){toast('Opción no válida');return;}
+ const key=swapKey(day,type);if(!state.ingredientSwaps[key])state.ingredientSwaps[key]={};
+ if(n===0)delete state.ingredientSwaps[key][number];else state.ingredientSwaps[key][number]=alternatives[n-1];
+ save();renderMeals();renderGroceries();
+ toast('Ingrediente actualizado en receta y compra');
+ alert('Cambio guardado. Se mantiene la cantidad original como aproximación; revisa peso, cocción, alérgenos y ración. Las calorías y macros mostrados NO se recalculan por este cambio.');
+}
 let selectedDay=0;
 function save(){localStorage.setItem("cqt_state",JSON.stringify(state))}
 function toast(s){let t=document.getElementById("toast");t.textContent=s;t.style.display="block";setTimeout(()=>t.style.display="none",2100)}
@@ -190,13 +224,13 @@ function renderCalorieSummary(){
   const remaining=goal-total,pct=goal>0?Math.min(100,Math.round(total/goal*100)):0;
   const fmt=n=>n.toLocaleString("es-ES");
   const breakdown=parts.map(p=>`<div style="margin:5px 0"><strong>${p.type==="comida"?"Comida":"Cena"}:</strong> ${fmt(p.per)} kcal/persona × 2 = <strong>${fmt(p.both)} kcal</strong></div>`).join("");
-  document.getElementById("calorieSummary").innerHTML=`<h3>🔥 Desglose de comida y cena · ${dayNames[selectedDay]}</h3><div style="font-size:13px;line-height:1.7;margin:9px 0">${breakdown}</div><div class="calorie-numbers"><div><strong>${fmt(total)}</strong> <span>kcal estimadas entre los dos</span></div>${goal>0?`<div><strong>${fmt(goal)}</strong> <span>kcal objetivo conjunto</span></div><div><strong>${fmt(Math.abs(remaining))}</strong> <span>${remaining>0?"kcal estimadas por debajo":remaining<0?"kcal estimadas por encima":"kcal de diferencia (estimación)"}</span></div>`:`<div><span>Configura vuestro objetivo conjunto en Preferencias.</span></div>`}</div>${goal>0?`<div class="calorie-track"><i style="width:${pct}%"></i></div><p class="nutrition-note">${pct}% del objetivo según el recetario. <strong>${remaining===0?"Objetivo teórico alcanzado; no está verificado con los ingredientes.":"La suma coincide con las cifras mostradas arriba."}</strong> Las cantidades se escalan proporcionalmente y se redondean; los valores nutricionales originales son orientativos, no están recalculados ingrediente a ingrediente. No es una garantía de ingesta real.</p>`:"<p class=\"nutrition-note\">Sin objetivo configurado: se usan las cantidades originales de las recetas.</p>"}`;
+  document.getElementById("calorieSummary").innerHTML=`<h3>🔥 Desglose de comida y cena · ${dayNames[selectedDay]}</h3><div style="font-size:13px;line-height:1.7;margin:9px 0">${breakdown}</div><div class="calorie-numbers"><div><strong>${fmt(total)}</strong> <span>kcal estimadas entre los dos</span></div>${goal>0?`<div><strong>${fmt(goal)}</strong> <span>kcal objetivo conjunto</span></div><div><strong>${fmt(Math.abs(remaining))}</strong> <span>${remaining>0?"kcal estimadas por debajo":remaining<0?"kcal estimadas por encima":"kcal de diferencia (estimación)"}</span></div>`:`<div><span>Configura vuestro objetivo conjunto en Preferencias.</span></div>`}</div>${goal>0?`<div class="calorie-track"><i style="width:${pct}%"></i></div><p class="nutrition-note">${pct}% del objetivo según el recetario. <strong>${remaining===0?"Objetivo teórico alcanzado; no está verificado con los ingredientes.":"La suma coincide con las cifras mostradas arriba."}</strong> Las cantidades se escalan proporcionalmente y se redondean; los valores nutricionales originales son orientativos, no están recalculados ingrediente a ingrediente. Si cambias un ingrediente, las kcal mostradas NO se actualizan por ese cambio. No es una garantía de ingesta real.</p>`:"<p class=\"nutrition-note\">Sin objetivo configurado: se usan las cantidades originales de las recetas.</p>"}`;
 }
-function renderMeals(){let key=currentKeys()[selectedDay],ids=state.menu[key];document.getElementById("mealGrid").innerHTML=mealTypes.filter(m=>state.activeMeals.includes(m.id)).map(m=>{let idx=mealTypes.findIndex(x=>x.id===m.id),id=ids[idx],r=recipes.find(x=>x.id===id),factor=mealFactor(key,m.id);return `<article class="meal-card"><div class="meal-top"><span class="meal-type">${m.name}</span><span class="meal-emoji">${r.emoji}</span></div><div class="meal-info"><h3>${r.name}</h3><div class="meta"><span>⏱ ${r.time} min (orientativo)</span><span>👩‍❤️‍👨 2 raciones iguales</span></div>${nutritionHTML(r,factor)}${factor!==1?`<p class="nutrition-note">Cantidades ajustadas ×${factor.toFixed(2)}. Calorías orientativas; revisa los ingredientes actualizados.</p>`:""}<span class="tag">Cantidades para dos</span></div><div class="meal-actions"><button class="btn secondary small" onclick="showRecipe('${r.id}','${key}','${m.id}')">Ver receta</button><button class="btn small" onclick="swapRecipe('${key}',${idx})">Cambiar ↻</button></div></article>` }).join("")||"<p>Activa alguna comida en Preferencias para verla aquí.</p>";renderCalorieSummary()}
-function swapRecipe(day,idx){let type=mealTypes[idx].id,options=recipes.filter(r=>r.type===type&&r.time<=state.maxTime);let current=state.menu[day][idx];let next=options[(options.findIndex(r=>r.id===current)+1)%options.length];state.menu[day][idx]=next.id;save();renderMeals();renderGroceries();toast("¡Plato cambiado!")}
+function renderMeals(){let key=currentKeys()[selectedDay],ids=state.menu[key];document.getElementById("mealGrid").innerHTML=mealTypes.filter(m=>state.activeMeals.includes(m.id)).map(m=>{let idx=mealTypes.findIndex(x=>x.id===m.id),id=ids[idx],r=recipes.find(x=>x.id===id),factor=mealFactor(key,m.id);return `<article class="meal-card"><div class="meal-top"><span class="meal-type">${m.name}</span><span class="meal-emoji">${r.emoji}</span></div><div class="meal-info"><h3>${r.name}</h3><div class="meta"><span>⏱ ${r.time} min (orientativo)</span><span>👩‍❤️‍👨 2 raciones iguales</span></div>${nutritionHTML(r,factor)}${factor!==1?`<p class="nutrition-note">Cantidades ajustadas ×${factor.toFixed(2)}. Calorías orientativas; revisa los ingredientes actualizados.</p>`:""}<span class="tag">Cantidades para dos</span></div><div class="meal-actions"><button class="btn secondary small" onclick="showRecipe('${r.id}','${key}','${m.id}')">Ver receta</button><button class="btn small" onclick="swapRecipe('${key}',${idx})">Cambiar ↻</button><button class="btn secondary small" onclick="editIngredient('${key}','${m.id}')">Cambiar ingrediente 🥕</button></div></article>` }).join("")||"<p>Activa alguna comida en Preferencias para verla aquí.</p>";renderCalorieSummary()}
+function swapRecipe(day,idx){let type=mealTypes[idx].id,options=recipes.filter(r=>r.type===type&&r.time<=state.maxTime);let current=state.menu[day][idx];let next=options[(options.findIndex(r=>r.id===current)+1)%options.length];state.menu[day][idx]=next.id;delete state.ingredientSwaps[swapKey(day,type)];save();renderMeals();renderGroceries();toast("¡Plato cambiado!")}
 function showRecipe(id,day=null,type=null){
  let r=recipes.find(x=>x.id===id),factor=day&&type?mealFactor(day,type):1,n=perServing(r,factor);
- alert(`${r.emoji} ${r.name}\nTiempo orientativo: ${r.time} minutos\n\nINFORMACIÓN NUTRICIONAL ESTIMADA\n🔥 ${n.kcal} kcal por persona · ${n.kcal*2} kcal para los dos\nProteínas: ${n.protein} g · Hidratos: ${n.carbs} g\nGrasas: ${n.fat} g · Fibra: ${n.fiber} g\n\nIngredientes para 2 personas (cantidades ajustadas):\n${r.ingredients.map(i=>"• "+i[0]+": "+scaledQuantity(i[1],factor)).join("\n")}\n\nPreparación orientativa: prepara y cocina los ingredientes hasta que estén bien hechos. Si las cantidades aumentan, el tiempo de cocción puede aumentar. Comprueba siempre el etiquetado y evita mariscos, caldos o salsas que los contengan y la contaminación cruzada.\n\nLas kcal son estimaciones del recetario escaladas proporcionalmente, no cálculos nutricionales verificados ingrediente a ingrediente. Los redondeos de compra y las marcas pueden alterar el resultado.`);
+ alert(`${r.emoji} ${r.name}\nTiempo orientativo: ${r.time} minutos\n\nINFORMACIÓN NUTRICIONAL ESTIMADA\n🔥 ${n.kcal} kcal por persona · ${n.kcal*2} kcal para los dos\nProteínas: ${n.protein} g · Hidratos: ${n.carbs} g\nGrasas: ${n.fat} g · Fibra: ${n.fiber} g\n\nIngredientes para 2 personas (cantidades ajustadas):\n${(day&&type?effectiveIngredients(r,day,type):r.ingredients).map(i=>"• "+i[0]+": "+scaledQuantity(i[1],factor)).join("\n")}\n\nPreparación orientativa: prepara y cocina los ingredientes hasta que estén bien hechos. Si las cantidades aumentan, el tiempo de cocción puede aumentar. Comprueba siempre el etiquetado y evita mariscos, caldos o salsas que los contengan y la contaminación cruzada.\n\nLas kcal son estimaciones del recetario escaladas proporcionalmente, no cálculos nutricionales verificados ingrediente a ingrediente. Los redondeos de compra y las marcas pueden alterar el resultado. Los cambios de ingrediente no recalculan las kcal ni los macronutrientes.`);
 }
 const referencePrices={"Aceite de oliva":[6.5,1000,"ml"],"Aguacate":[1.35,1,"ud"],"Albahaca":[1.2,20,"g"],"Almendras":[2.65,200,"g"],"Arroz":[1.35,1000,"g"],"Avellanas":[2.6,200,"g"],"Bacalao fresco":[9.5,500,"g"],"Berenjena":[1.5,1,"ud"],"Boniato":[2.4,1000,"g"],"Brócoli":[2.2,500,"g"],"Calabacín":[1.2,1,"ud"],"Canela":[1.2,40,"g"],"Carne picada de pavo":[4.5,400,"g"],"Carne picada magra":[5.0,400,"g"],"Cebolla":[1.8,1000,"g",180],"Champiñones":[1.8,250,"g"],"Copos de avena":[1.5,500,"g"],"Crema de cacahuete 100%":[3.2,350,"g"],"Cuscús":[1.65,500,"g"],"Dorada limpia":[5.5,1,"ud"],"Espinacas":[1.5,300,"g"],"Filetes de merluza":[5.5,500,"g"],"Filetes de pavo":[4.3,400,"g"],"Fresas":[3.5,500,"g"],"Fruta de temporada":[2.4,1000,"g",180],"Huevos":[2.7,12,"ud"],"Leche":[1.05,1000,"ml"],"Lechuga":[1.35,1,"ud"],"Lentejas":[1.7,500,"g"],"Limón":[1.75,1000,"g",110],"Manzana":[2.3,1000,"g",180],"Maíz":[1.25,285,"g"],"Melocotón":[2.9,1000,"g",180],"Miel":[3.5,500,"g"],"Mozzarella":[1.25,125,"g"],"Nueces":[2.5,200,"g"],"Pan integral":[1.8,20,"rebanadas"],"Pasta integral":[1.3,500,"g"],"Patata":[2.7,2000,"g",220],"Pavo":[4.2,400,"g"],"Pavo cocido":[2.3,200,"g"],"Pechuga de pollo":[5.2,500,"g"],"Pepino":[0.95,1,"ud"],"Pera":[2.4,1000,"g",180],"Pimiento":[1.2,1,"ud"],"Pimientos":[1.2,1,"ud"],"Plátano":[1.9,1000,"g",160],"Puerro":[1.7,500,"g",180],"Queso fresco":[1.9,250,"g"],"Queso parmesano":[2.8,150,"g"],"Queso rallado":[2.0,200,"g"],"Quinoa":[2.7,500,"g"],"Requesón":[1.9,200,"g"],"Ricotta":[2.1,250,"g"],"Salmón fresco":[6.9,400,"g"],"Semillas de chía":[2.3,250,"g"],"Ternera magra":[6.2,400,"g"],"Tomate":[2.3,1000,"g",180],"Tomate cherry":[1.8,250,"g"],"Tomate triturado":[1.0,400,"g"],"Tortillas de trigo":[1.8,8,"ud"],"Tortitas de arroz":[1.2,14,"ud"],"Yogur natural":[1.65,8,"ud"],"Zanahoria":[1.5,1000,"g",120],"Huevo":[2.7,12,"ud"]};
 
@@ -223,7 +257,7 @@ function collectGroceries(){
   if(!state.activeMeals.includes(mealTypes[idx].id))return;
   const r=recipes.find(x=>x.id===id);if(!r)return;
   const factor=mealFactor(day,mealTypes[idx].id);
-  r.ingredients.forEach(([rawName,qty,cat])=>{
+  effectiveIngredients(r,day,mealTypes[idx].id).forEach(([rawName,qty,cat])=>{
    const name=normName(rawName),key=name;
    if(!totals[key])totals[key]={name,cat,quantities:[],n:0,unmatched:false};
    const entry=totals[key];entry.quantities.push(scaledQuantity(qty,factor));
@@ -317,7 +351,7 @@ function planBudgetWeek(){
   if(better(candidate,best))best={menu:JSON.parse(JSON.stringify(state.menu)),...candidate};
  }
  if(!best){state.menu=original;return;}
- state.menu=best.menu;state.checked=[];save();renderMeals();renderGroceries();
+ state.menu=best.menu;state.ingredientSwaps={};state.checked=[];save();renderMeals();renderGroceries();
  const status=document.getElementById('budgetPlanStatus');
  const variety=`Variedad: ${best.unique} recetas distintas; ${best.excess?'algunas aparecen más de dos veces':'ninguna aparece más de dos veces'} por tipo de comida.`;
  const note=best.missing?` ${best.missing} ingredientes sin precio: total incompleto.`:'';
