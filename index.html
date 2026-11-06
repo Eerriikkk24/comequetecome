@@ -45,7 +45,7 @@ input[type=number],input[type=text],select{width:100%;border:1px solid var(--lin
 </section>
 <section class="panel" id="compra">
 <div class="section-head"><div><h2>Lista de la compra</h2><p>Ingredientes semanales consolidados, con envases y coste orientativo.</p></div><button class="btn secondary" id="copyList">Copiar lista</button></div>
-<div class="list-layout"><div class="shopping"><h3>🧺 Lo que necesitáis</h3><div id="groceryList"></div></div><aside class="sidebox"><h3>💶 Vuestro presupuesto</h3><div id="priceSummary" style="padding:10px 0"></div><label for="budget">Presupuesto semanal (€)</label><input type="number" id="budget" min="0" step="5" value="90"><p style="font-size:12px;color:var(--muted);line-height:1.5">El menú intenta ajustarse al importe elegido con precios orientativos; no garantiza respetar el límite ni usa precios actuales de Mercadona. Comprueba la cesta real antes de comprar.</p><div class="note" style="margin-top:10px">🛒 Supermercado elegido: <b>Mercadona</b></div><button class="btn" id="saveBudget" style="width:100%">Guardar y ajustar menú</button><p id="budgetPlanStatus" style="font-size:12px;line-height:1.5;color:var(--muted)"></p></aside></div>
+<div class="list-layout"><div class="shopping"><h3>🧺 Lo que necesitáis</h3><div id="groceryList"></div></div><aside class="sidebox"><h3>💶 Vuestro presupuesto</h3><div id="priceSummary" style="padding:10px 0"></div><label for="budget">Presupuesto semanal (€)</label><input type="number" id="budget" min="0" step="5" value="90"><p style="font-size:12px;color:var(--muted);line-height:1.5">El menú busca variedad (preferiblemente sin repetir recetas más de dos veces) y compara la cesta con precios orientativos. Si el presupuesto es demasiado bajo, te avisará; no garantiza el límite ni usa precios actuales de Mercadona. Comprueba la cesta real antes de comprar.</p><div class="note" style="margin-top:10px">🛒 Supermercado elegido: <b>Mercadona</b></div><button class="btn" id="saveBudget" style="width:100%">Guardar y ajustar menú</button><p id="budgetPlanStatus" style="font-size:12px;line-height:1.5;color:var(--muted)"></p></aside></div>
 </section>
 <section class="panel" id="recetas">
 <div class="section-head"><div><h2>Vuestro recetario</h2><p>Ideas sencillas, sabrosas y de menos de una hora.</p></div></div><div class="recipe-grid" id="recipeGrid"></div><p class="nutrition-note">* Información nutricional orientativa por persona. No sustituye el etiquetado del producto ni el asesoramiento de un profesional.</p>
@@ -270,43 +270,61 @@ function planBudgetWeek(){
  const slots=mealTypes.map((m,idx)=>({type:m.id,idx,pool:recipes.filter(r=>r.type===m.id&&r.time<=state.maxTime)})).filter(x=>state.activeMeals.includes(x.type)&&x.pool.length);
  if(!slots.length){toast('Activa alguna comida en Preferencias');return;}
  const original=JSON.parse(JSON.stringify(state.menu));
- let best=null,bestScore=Infinity;
- const score=()=>{const c=menuCost();return {cost:c.total,missing:c.missing,score:c.total+c.missing*10000};};
- // Empezar con distintas combinaciones y mejorar cambios de una receta cada vez.
- for(let trial=0;trial<12;trial++){
-  for(const day of days){
-   for(const slot of slots){
-    const current=recipes.find(r=>r.id===state.menu[day][slot.idx]);
-    if(trial===0&&current&&current.time<=state.maxTime)continue;
-    state.menu[day][slot.idx]=slot.pool[Math.floor(Math.random()*slot.pool.length)].id;
-   }
+ let best=null;
+ const shuffle=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
+ const evaluate=()=>{
+  const c=menuCost();let repeats=0,excess=0,unique=0;
+  for(const slot of slots){
+   const counts={};for(const day of days){const id=state.menu[day][slot.idx];if(id)counts[id]=(counts[id]||0)+1;}
+   const values=Object.values(counts);unique+=values.length;
+   repeats+=values.reduce((n,v)=>n+Math.max(0,v-1),0);
+   excess+=values.reduce((n,v)=>n+Math.max(0,v-2),0);
   }
-  for(let pass=0;pass<2;pass++){
-   const order=days.flatMap(day=>slots.map(slot=>({day,slot}))).sort(()=>Math.random()-.5);
+  // El tercer uso de una misma receta recibe una penalización muy alta.
+  // Se permiten dos usos cuando el presupuesto es ajustado.
+  const penalty=excess*400+repeats*22;
+  const feasible=budget>0&&c.total<=budget&&c.missing===0;
+  return {...c,repeats,excess,unique,feasible,score:c.total+penalty+c.missing*10000};
+ };
+ const better=(a,b)=>{
+  if(!b)return true;
+  if(a.missing!==b.missing)return a.missing<b.missing;
+  if(a.feasible!==b.feasible)return a.feasible;
+  if(a.excess!==b.excess)return a.excess<b.excess;
+  if(a.feasible){if(a.repeats!==b.repeats)return a.repeats<b.repeats;return a.cost<b.cost;}
+  // Si el presupuesto no se puede alcanzar, equilibrar el exceso y la variedad.
+  return a.score<b.score-0.001;
+ };
+ for(let trial=0;trial<18;trial++){
+  // Reparto inicial equilibrado para evitar siete días con la misma receta.
+  for(const slot of slots){
+   const shuffled=shuffle(slot.pool);
+   for(let i=0;i<days.length;i++)state.menu[days[i]][slot.idx]=shuffled[i%shuffled.length].id;
+  }
+  for(let pass=0;pass<3;pass++){
+   const order=shuffle(days.flatMap(day=>slots.map(slot=>({day,slot}))));
    for(const {day,slot} of order){
-    const old=state.menu[day][slot.idx];let chosen=old;
-    let local=score().score;
-    // Se consideran todas las recetas posibles, con su impacto sobre los envases compartidos.
-    for(const r of slot.pool){
+    const old=state.menu[day][slot.idx];let chosen=old,local=evaluate();
+    for(const r of shuffle(slot.pool)){
      state.menu[day][slot.idx]=r.id;
-     const candidate=score().score;
-     if(candidate<local-0.001){local=candidate;chosen=r.id;}
+     const candidate=evaluate();
+     if(better(candidate,local)){local=candidate;chosen=r.id;}
     }
     state.menu[day][slot.idx]=chosen;
    }
   }
-  const c=score();
-  if(c.score<bestScore){bestScore=c.score;best={menu:JSON.parse(JSON.stringify(state.menu)),...c};}
-  if(budget>0&&best.cost<=budget&&best.missing===0)break;
+  const candidate=evaluate();
+  if(better(candidate,best))best={menu:JSON.parse(JSON.stringify(state.menu)),...candidate};
  }
  if(!best){state.menu=original;return;}
  state.menu=best.menu;state.checked=[];save();renderMeals();renderGroceries();
  const status=document.getElementById('budgetPlanStatus');
- const note=best.missing?` Hay ${best.missing} ingredientes sin precio: el total es incompleto.`:'';
+ const variety=`Variedad: ${best.unique} recetas distintas; ${best.excess?'algunas aparecen más de dos veces':'ninguna aparece más de dos veces'} por tipo de comida.`;
+ const note=best.missing?` ${best.missing} ingredientes sin precio: total incompleto.`:'';
  if(budget>0){
-  status.textContent=best.cost<=budget&&!best.missing?`✓ Menú estimado: ${money(best.cost)} para ${money(budget)} de presupuesto. Precios de ejemplo; revisa el importe real.`:`Menú más económico encontrado: ${money(best.cost)} frente a ${money(budget)} de presupuesto.${best.cost>budget?' No se ha conseguido alcanzar el límite.':''}${note}`;
- }else status.textContent=`Menú estimado: ${money(best.cost)}.${note} Indica un presupuesto mayor que cero para comparar.`;
- toast(best.cost<=budget&&budget>0&&!best.missing?'Menú ajustado (estimación)':'Menú optimizado; revisa el coste');
+  status.textContent=best.feasible?`✓ Cesta estimada ${money(best.cost)} / ${money(budget)}. ${variety} Precios orientativos, no actuales de Mercadona.`:`Cesta estimada ${money(best.cost)} / ${money(budget)}. ${best.cost>budget?'No se ha podido cumplir el presupuesto manteniendo la variedad.':''} ${variety}${note} Precios orientativos.`;
+ }else status.textContent=`Cesta estimada ${money(best.cost)}. ${variety}${note} Indica un presupuesto para comparar.`;
+ toast(best.feasible?'Menú variado dentro del presupuesto estimado':'Menú variado: revisa el coste');
 }
 document.getElementById("newWeek").onclick=planBudgetWeek;
 document.getElementById("saveBudget").onclick=()=>{state.budget=+document.getElementById("budget").value||0;document.getElementById("budgetSetting").value=state.budget;save();planBudgetWeek()};
