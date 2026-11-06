@@ -51,3 +51,7 @@ Actualización nutricional: muestra estimaciones por persona de energía (kcal),
 
 ## Lista de compra y precios (v6)
 La lista suma ingredientes de toda la semana, calcula cantidades, estima envases completos y coste por producto, total y comparación con presupuesto. **Los precios precargados son ejemplos orientativos, no precios actuales de Mercadona ni verificados para el CP 20120.** No hay consulta en vivo ni API externa. Los productos por peso/unidad son aproximados; revisar precios reales, alérgenos y trazas en tienda.
+
+
+## Presupuesto automático (v7)
+Al generar la semana o guardar presupuesto, se busca una combinación de recetas de menor coste semanal estimado, considerando envases enteros y cantidades ajustadas al objetivo calórico conjunto. Es una heurística, no garantiza el óptimo ni cumplir un presupuesto imposible. Los precios son referencias ilustrativas, NO precios actuales de Mercadona. Comprueba la compra real y las alergias.

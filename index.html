@@ -36,7 +36,7 @@ input[type=number],input[type=text],select{width:100%;border:1px solid var(--lin
 <button class="tab active" data-tab="menu">📅 Menú semanal</button><button class="tab" data-tab="compra">🛒 Lista de compra</button><button class="tab" data-tab="recetas">🍳 Recetas</button><button class="tab" data-tab="ajustes">⚙️ Preferencias</button>
 </nav>
 <section class="panel active" id="menu">
-<div class="section-head"><div><h2>Vuestro menú</h2><p>Platos variados para dos personas.</p></div><button class="btn" id="newWeek">✨ Renovar semana</button></div>
+<div class="section-head"><div><h2>Vuestro menú</h2><p>Platos variados para dos personas, ajustados al presupuesto orientativo.</p></div><button class="btn" id="newWeek">✨ Generar semana según presupuesto</button></div>
 <div class="days" id="days"></div>
 <div class="cards" style="margin-bottom:14px"><div class="stat"><span>👩‍❤️‍👨 COMENSALES</span><b>2</b></div><div class="stat"><span>⏱️ TIEMPO MÁXIMO</span><b>60 min</b></div><div class="stat"><span>🛍️ SUPERMERCADO</span><b>Mercadona</b></div></div>
 <div class="calorie-box" id="calorieSummary" aria-live="polite"></div>
@@ -45,7 +45,7 @@ input[type=number],input[type=text],select{width:100%;border:1px solid var(--lin
 </section>
 <section class="panel" id="compra">
 <div class="section-head"><div><h2>Lista de la compra</h2><p>Ingredientes semanales consolidados, con envases y coste orientativo.</p></div><button class="btn secondary" id="copyList">Copiar lista</button></div>
-<div class="list-layout"><div class="shopping"><h3>🧺 Lo que necesitáis</h3><div id="groceryList"></div></div><aside class="sidebox"><h3>💶 Vuestro presupuesto</h3><div id="priceSummary" style="padding:10px 0"></div><label for="budget">Presupuesto semanal (€)</label><input type="number" id="budget" min="0" step="5" value="90"><p style="font-size:12px;color:var(--muted);line-height:1.5">Los precios mostrados son referencias ilustrativas, NO precios actuales de Mercadona. Comprueba la cesta real antes de comprar.</p><div class="note" style="margin-top:10px">🛒 Supermercado elegido: <b>Mercadona</b></div><button class="btn" id="saveBudget" style="width:100%">Guardar presupuesto</button></aside></div>
+<div class="list-layout"><div class="shopping"><h3>🧺 Lo que necesitáis</h3><div id="groceryList"></div></div><aside class="sidebox"><h3>💶 Vuestro presupuesto</h3><div id="priceSummary" style="padding:10px 0"></div><label for="budget">Presupuesto semanal (€)</label><input type="number" id="budget" min="0" step="5" value="90"><p style="font-size:12px;color:var(--muted);line-height:1.5">El menú intenta ajustarse al importe elegido con precios orientativos; no garantiza respetar el límite ni usa precios actuales de Mercadona. Comprueba la cesta real antes de comprar.</p><div class="note" style="margin-top:10px">🛒 Supermercado elegido: <b>Mercadona</b></div><button class="btn" id="saveBudget" style="width:100%">Guardar y ajustar menú</button><p id="budgetPlanStatus" style="font-size:12px;line-height:1.5;color:var(--muted)"></p></aside></div>
 </section>
 <section class="panel" id="recetas">
 <div class="section-head"><div><h2>Vuestro recetario</h2><p>Ideas sencillas, sabrosas y de menos de una hora.</p></div></div><div class="recipe-grid" id="recipeGrid"></div><p class="nutrition-note">* Información nutricional orientativa por persona. No sustituye el etiquetado del producto ni el asesoramiento de un profesional.</p>
@@ -254,11 +254,66 @@ function checkItem(n,v){state.checked=v?[...new Set([...state.checked,n])]:state
 function renderRecipes(){document.getElementById("recipeGrid").innerHTML=recipes.filter(r=>r.time<=state.maxTime).map(r=>`<article class="recipe-card"><div class="emoji">${r.emoji}</div><h3>${r.name}</h3><p>⏱ ${r.time} min · Para 2 personas</p>${nutritionHTML(r)}<button class="btn secondary small" onclick="showRecipe('${r.id}')">Ver ingredientes</button></article>`).join("")}
 function renderToggles(){document.getElementById("mealToggles").innerHTML=mealTypes.map(m=>`<label class="toggle"><input type="checkbox" value="${m.id}" ${state.activeMeals.includes(m.id)?"checked":""}> ${m.emoji} ${m.name}</label>`).join("")}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id===b.dataset.tab));if(b.dataset.tab==="compra")renderGroceries()});
-document.getElementById("newWeek").onclick=()=>{let pools=mealTypes.map(m=>recipes.filter(r=>r.type===m.id&&r.time<=state.maxTime));Object.keys(state.menu).forEach(d=>state.menu[d]=pools.map(p=>p[Math.floor(Math.random()*p.length)].id));state.checked=[];save();renderMeals();renderGroceries();toast("¡Nueva semana preparada!")};
-document.getElementById("saveBudget").onclick=()=>{state.budget=+document.getElementById("budget").value||0;document.getElementById("budgetSetting").value=state.budget;save();renderGroceries();toast("Presupuesto guardado")};
-document.getElementById("saveSettings").onclick=()=>{state.activeMeals=[...document.querySelectorAll("#mealToggles input:checked")].map(x=>x.value);state.maxTime=+document.getElementById("maxTime").value;state.budget=+document.getElementById("budgetSetting").value||0;state.dailyKcalGoal=Math.max(0,+document.getElementById("dailyKcalGoal").value||0);document.getElementById("budget").value=state.budget;save();renderMeals();renderGroceries();renderRecipes();toast("Preferencias guardadas")};
+// Optimización heurística de la cesta SEMANAL: precios de referencia y envases enteros.
+// Mantiene el objetivo calórico conjunto ajustando las cantidades de comida y cena.
+function menuCost(){
+ const entries=pricedGroceries();
+ return {total:entries.reduce((n,x)=>n+(x.price||0),0),missing:entries.filter(x=>x.price===null).length};
+}
+function planBudgetWeek(){
+ const budget=Math.max(0,Number(state.budget)||0);
+ const days=currentKeys();
+ const slots=mealTypes.map((m,idx)=>({type:m.id,idx,pool:recipes.filter(r=>r.type===m.id&&r.time<=state.maxTime)})).filter(x=>state.activeMeals.includes(x.type)&&x.pool.length);
+ if(!slots.length){toast('Activa alguna comida en Preferencias');return;}
+ const original=JSON.parse(JSON.stringify(state.menu));
+ let best=null,bestScore=Infinity;
+ const score=()=>{const c=menuCost();return {cost:c.total,missing:c.missing,score:c.total+c.missing*10000};};
+ // Empezar con distintas combinaciones y mejorar cambios de una receta cada vez.
+ for(let trial=0;trial<12;trial++){
+  for(const day of days){
+   for(const slot of slots){
+    const current=recipes.find(r=>r.id===state.menu[day][slot.idx]);
+    if(trial===0&&current&&current.time<=state.maxTime)continue;
+    state.menu[day][slot.idx]=slot.pool[Math.floor(Math.random()*slot.pool.length)].id;
+   }
+  }
+  for(let pass=0;pass<2;pass++){
+   const order=days.flatMap(day=>slots.map(slot=>({day,slot}))).sort(()=>Math.random()-.5);
+   for(const {day,slot} of order){
+    const old=state.menu[day][slot.idx];let chosen=old;
+    let local=score().score;
+    // Se consideran todas las recetas posibles, con su impacto sobre los envases compartidos.
+    for(const r of slot.pool){
+     state.menu[day][slot.idx]=r.id;
+     const candidate=score().score;
+     if(candidate<local-0.001){local=candidate;chosen=r.id;}
+    }
+    state.menu[day][slot.idx]=chosen;
+   }
+  }
+  const c=score();
+  if(c.score<bestScore){bestScore=c.score;best={menu:JSON.parse(JSON.stringify(state.menu)),...c};}
+  if(budget>0&&best.cost<=budget&&best.missing===0)break;
+ }
+ if(!best){state.menu=original;return;}
+ state.menu=best.menu;state.checked=[];save();renderMeals();renderGroceries();
+ const status=document.getElementById('budgetPlanStatus');
+ const note=best.missing?` Hay ${best.missing} ingredientes sin precio: el total es incompleto.`:'';
+ if(budget>0){
+  status.textContent=best.cost<=budget&&!best.missing?`✓ Menú estimado: ${money(best.cost)} para ${money(budget)} de presupuesto. Precios de ejemplo; revisa el importe real.`:`Menú más económico encontrado: ${money(best.cost)} frente a ${money(budget)} de presupuesto.${best.cost>budget?' No se ha conseguido alcanzar el límite.':''}${note}`;
+ }else status.textContent=`Menú estimado: ${money(best.cost)}.${note} Indica un presupuesto mayor que cero para comparar.`;
+ toast(best.cost<=budget&&budget>0&&!best.missing?'Menú ajustado (estimación)':'Menú optimizado; revisa el coste');
+}
+document.getElementById("newWeek").onclick=planBudgetWeek;
+document.getElementById("saveBudget").onclick=()=>{state.budget=+document.getElementById("budget").value||0;document.getElementById("budgetSetting").value=state.budget;save();planBudgetWeek()};
+document.getElementById("saveSettings").onclick=()=>{state.activeMeals=[...document.querySelectorAll("#mealToggles input:checked")].map(x=>x.value);state.maxTime=+document.getElementById("maxTime").value;state.budget=+document.getElementById("budgetSetting").value||0;state.dailyKcalGoal=Math.max(0,+document.getElementById("dailyKcalGoal").value||0);document.getElementById("budget").value=state.budget;save();renderMeals();renderGroceries();renderRecipes();planBudgetWeek();toast("Preferencias guardadas; menú recalculado")};
 document.getElementById("budget").value=state.budget;document.getElementById("budgetSetting").value=state.budget;document.getElementById("maxTime").value=state.maxTime;document.getElementById("dailyKcalGoal").value=state.dailyKcalGoal||"";
-document.getElementById("copyList").onclick=()=>{let txt="Compra orientativa · ComeQueTeCome (precios de ejemplo, no verificados)\n"+[...document.querySelectorAll(".grocery-group")].map(g=>g.querySelector("h4").textContent+"\n"+[...g.querySelectorAll(".grocery-item")].map(x=>"- "+x.querySelector("span").textContent+" "+x.querySelector(".qty").textContent).join("\n")).join("\n\n");navigator.clipboard?.writeText(txt).then(()=>toast("Lista copiada")).catch(()=>toast("No se pudo copiar; selecciona la lista"))};
+document.getElementById("copyList").onclick=()=>{
+ const entries=pricedGroceries();
+ const total=entries.reduce((n,x)=>n+(x.price||0),0);
+ const txt=`ComeQueTeCome · compra semanal (precios ORIENTATIVOS, no actuales de Mercadona)\nPresupuesto: ${money(state.budget)} · Cesta estimada: ${money(total)}\n\n`+entries.map(x=>`- ${x.name}: ${x.quantities.join(' + ')} | ${x.price===null?'Precio no disponible':`${x.packs} envases de ${x.packSize} ${x.packUnit} · ${money(x.price)}`}`).join('\n');
+ navigator.clipboard?.writeText(txt).then(()=>toast('Lista copiada')).catch(()=>toast('No se pudo copiar la lista'));
+};
 renderDays();renderToggles();renderMeals();renderGroceries();renderRecipes();
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 </script>
