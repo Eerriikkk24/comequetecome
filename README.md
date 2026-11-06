@@ -47,3 +47,7 @@ Actualización nutricional: muestra estimaciones por persona de energía (kcal),
 - El objetivo conjunto acepta valores exactos, por ejemplo 1500 kcal (pasos de 1 kcal).
 - El resumen diario compara el objetivo conjunto con las calorías estimadas de las dos raciones.
 - Las tarjetas de receta siguen mostrando kcal por persona.
+
+
+## Lista de compra y precios (v6)
+La lista suma ingredientes de toda la semana, calcula cantidades, estima envases completos y coste por producto, total y comparación con presupuesto. **Los precios precargados son ejemplos orientativos, no precios actuales de Mercadona ni verificados para el CP 20120.** No hay consulta en vivo ni API externa. Los productos por peso/unidad son aproximados; revisar precios reales, alérgenos y trazas en tienda.
