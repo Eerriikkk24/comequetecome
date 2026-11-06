@@ -32,3 +32,12 @@ La alergia al marisco requiere comprobar etiquetas, posibles trazas y contaminac
 
 
 Actualización nutricional: muestra estimaciones por persona de energía (kcal), proteínas, hidratos de carbono, grasas y fibra en las tarjetas del menú y del recetario. Son valores orientativos, no datos de laboratorio.
+
+
+## Novedades de esta versión
+- Recetario ampliado con nuevas ideas de desayuno, tentempiés, comidas y cenas.
+- Objetivo calórico diario conjunto editable desde Preferencias.
+- Resumen de calorías estimadas para los dos en cada día del menú.
+- Las recetas de comida y cena se plantean para dos raciones iguales.
+- Se ha actualizado la caché de la PWA para que los dispositivos reciban esta versión.
+- Las cifras nutricionales son aproximadas; revisad etiquetas y alérgenos de cada producto.
