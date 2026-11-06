@@ -41,3 +41,9 @@ Actualización nutricional: muestra estimaciones por persona de energía (kcal),
 - Las recetas de comida y cena se plantean para dos raciones iguales.
 - Se ha actualizado la caché de la PWA para que los dispositivos reciban esta versión.
 - Las cifras nutricionales son aproximadas; revisad etiquetas y alérgenos de cada producto.
+
+
+### Ajuste del objetivo calórico
+- El objetivo conjunto acepta valores exactos, por ejemplo 1500 kcal (pasos de 1 kcal).
+- El resumen diario compara el objetivo conjunto con las calorías estimadas de las dos raciones.
+- Las tarjetas de receta siguen mostrando kcal por persona.
